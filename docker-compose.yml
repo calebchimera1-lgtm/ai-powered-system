@@ -1,0 +1,76 @@
+# Production-like stack: docker compose up -d --build
+# Configure secrets in .env (copy .env.example, or run `make env`).
+name: smart-inventory
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-inventory}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-inventory}
+    # Tuned for a laptop with limited RAM.
+    command: >
+      postgres -c shared_buffers=128MB -c work_mem=8MB -c maintenance_work_mem=64MB
+               -c max_connections=50 -c effective_cache_size=384MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 384m
+
+  api:
+    build: ./backend
+    image: smart-inventory-backend:latest
+    restart: unless-stopped
+    command: ["api"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-inventory}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-inventory}
+      STORAGE_DIR: /app/storage
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    mem_limit: 512m
+
+  worker:
+    image: smart-inventory-backend:latest
+    restart: unless-stopped
+    command: ["worker"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-inventory}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-inventory}
+      STORAGE_DIR: /app/storage
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      api:
+        condition: service_healthy   # api applies migrations first
+    mem_limit: 768m
+
+  web:
+    build: ./frontend
+    image: smart-inventory-frontend:latest
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: 64m
+
+volumes:
+  pgdata:
+  storage:

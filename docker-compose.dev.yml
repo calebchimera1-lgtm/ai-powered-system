@@ -1,0 +1,22 @@
+# Development overrides: hot reload and exposed ports.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# Then run the frontend natively for instant reloads:  cd frontend && npm run dev
+services:
+  db:
+    ports:
+      - "5432:5432"
+  api:
+    command: ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+    environment:
+      ENVIRONMENT: development
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/scripts:/app/scripts
+  worker:
+    environment:
+      ENVIRONMENT: development
+    volumes:
+      - ./backend/app:/app/app
