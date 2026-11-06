@@ -16,6 +16,7 @@ os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 os.environ["ENVIRONMENT"] = "test"
 os.environ["JWT_SECRET"] = "test-secret-key-for-unit-tests-only"
 os.environ["FRONTEND_URL"] = "http://frontend.test"
+os.environ["STORAGE_DIR"] = __import__("tempfile").mkdtemp(prefix="inventory-test-storage-")
 
 import pytest
 from fastapi.testclient import TestClient
@@ -145,3 +146,51 @@ def auth_headers(client: TestClient, make_user):
         return user, login(client, user.username)
 
     return _auth
+
+
+@pytest.fixture
+def catalog(db: Session, make_user):
+    """Small helper for building products/stock directly through the services."""
+    from decimal import Decimal
+
+    from app.models import Category, Product
+    from app.services import inventory_service
+
+    actor = make_user("super_admin", username="catalog_admin")
+
+    class Catalog:
+        user = actor
+
+        def category(self, name: str = "Groceries") -> Category:
+            cat = Category(name=name)
+            db.add(cat)
+            db.commit()
+            return cat
+
+        def product(self, name: str = "White Sugar 2kg", **kw: object) -> Product:
+            defaults: dict[str, object] = {
+                "sku": f"SKU-{name[:3].upper()}-{db.query(Product).count() + 1}",
+                "selling_price": Decimal("230.00"),
+                "unit_of_measure": "pcs",
+            }
+            defaults.update(kw)
+            p = Product(name=name, **defaults)
+            db.add(p)
+            db.commit()
+            return p
+
+        def receive(self, product, qty, cost, expiry=None, batch=None, kind="PURCHASE_IN"):
+            ms = inventory_service.apply_movement(
+                db,
+                product_id=product.id,
+                quantity=Decimal(str(qty)),
+                movement_type=kind,
+                user=actor,
+                unit_cost=Decimal(str(cost)),
+                batch_info=inventory_service.BatchInfo(batch, expiry),
+            )
+            db.commit()
+            db.refresh(product)
+            return ms
+
+    return Catalog()

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -64,15 +64,19 @@ export function UserFormModal({ open, roles, user, currentUserId, onClose, onSub
     resolver: zodResolver(isEdit ? (baseSchema as unknown as typeof createSchema) : createSchema),
   });
 
+  const userKey = user?.id ?? null;
+  const latest = useRef(user);
+  latest.current = user;
   useEffect(() => {
     if (!open) return;
+    const user = latest.current;
     setFormError(null);
     reset(
       user
         ? { full_name: user.full_name, email: user.email, phone: user.phone ?? '', role: user.role.name }
         : { full_name: '', email: '', phone: '', role: 'cashier' as RoleName, username: '', passwordMode: 'link', password: '' },
     );
-  }, [open, user, reset]);
+  }, [open, userKey, reset]);
 
   const passwordMode = watch('passwordMode');
 

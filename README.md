@@ -12,8 +12,9 @@ The full architecture, ERD and AI strategy are in [docs/00-system-design-plan.md
 | Phase | Scope | State |
 |---|---|---|
 | 1. Foundation | Docker stack, database + migrations, authentication, role-based access, user management, password reset, sessions, audit log, worker queue, app shell | **Done** |
-| 2. Core inventory | Products, categories, suppliers, stock ledger | Next |
-| 3–6 | Sales & procurement, AI receipt digitization, analytics, finalization | Planned |
+| 2. Core inventory | Products (SKU, barcodes, photos, min/max, expiry), categories, suppliers and their prices, append-only stock ledger with weighted average cost, expiry batches (oldest first), stock counts and adjustments with manager approval, damaged/expired write-offs | **Done** |
+| 3. Sales & procurement | POS, receipts, returns, purchase orders, goods received, profit analytics | Next |
+| 4–6 | AI receipt digitization, analytics and forecasting, finalization | Planned |
 
 ## Quick start (Docker)
 
@@ -39,10 +40,14 @@ docker compose exec api python -m scripts.create_superadmin
 
 4. Open http://localhost:8080 and sign in.
 
-Optional, for demonstrations only: create one **demo** account per role (password `Demo@2026!`). Never run this on a real store's database.
+Optional, for demonstrations only: create one **demo** account per role (password `Demo@2026!`) and a small **synthetic** catalogue (10 products incl. sugar, rice, cooking oil, maize flour, milk, bread, soap and bottled water; 3 demo suppliers). Never run these on a real store's database.
 
 ```bash
 docker compose exec -e ENVIRONMENT=development api python -m scripts.seed_demo_users
+```
+
+```bash
+docker compose exec -e ENVIRONMENT=development api python -m scripts.seed_demo_catalog
 ```
 
 API documentation (OpenAPI) is available at http://localhost:8080/api/docs.
@@ -90,7 +95,18 @@ cd backend && python -m pytest
 cd frontend && npm test
 ```
 
-Phase 1 results: **85 backend tests** (unit + API integration + migrations + worker) and **28 frontend tests**, all passing. The full flow was also exercised in a real browser against the Docker stack: sign-in, session restore, creating a user, the setup link on a phone, the deactivation confirmation, the audit log and the cashier's restricted menus.
+Current results (end of Phase 2): **152 backend tests** and **44 frontend tests**, all passing. They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
+
+Each phase is also exercised end-to-end in a real browser against the Docker stack. For Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
+
+## How stock works
+
+- Stock changes only through ledger movements (opening stock, receipts, sales, returns, adjustments, write-offs). Each records who, when, how much and the running balance. The database refuses edits or deletions of ledger rows.
+- Cost of stock uses the **weighted average cost** (WAC): each receipt blends its price into the average; sales and write-offs are valued at the current average.
+- Perishables can **track expiry**: each delivery is a batch, and sales and write-offs take the oldest-expiring stock first.
+- Stock cannot go below zero unless a Super Administrator explicitly authorises it.
+- Manual adjustments worth more than **KES 5,000** at cost wait for a Store Manager's approval (configurable: `STOCK_ADJUSTMENT_APPROVAL_THRESHOLD`). Nobody can approve their own request.
+- Cashiers see prices and stock levels, never costs or margins.
 
 ## Security notes
 

@@ -1,5 +1,12 @@
 import clsx from 'clsx';
-import { forwardRef, useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import {
+  forwardRef,
+  useId,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react';
 
 interface FieldShellProps {
   label: string;
@@ -93,5 +100,54 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         ))}
       </select>
     </FieldShell>
+  );
+});
+
+export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label: string;
+  error?: string;
+  hint?: ReactNode;
+}
+
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
+  { label, error, hint, className, id, required, rows = 3, ...rest },
+  ref,
+) {
+  const autoId = useId();
+  const areaId = id ?? autoId;
+  return (
+    <FieldShell label={label} id={areaId} error={error} hint={hint} required={required}>
+      <textarea
+        ref={ref}
+        id={areaId}
+        rows={rows}
+        aria-invalid={error ? true : undefined}
+        className={clsx(control, 'py-2', error ? bad : ok, className)}
+        {...rest}
+      />
+    </FieldShell>
+  );
+});
+
+export const Checkbox = forwardRef<
+  HTMLInputElement,
+  InputHTMLAttributes<HTMLInputElement> & { label: ReactNode; description?: ReactNode }
+>(function Checkbox({ label, description, id, className, ...rest }, ref) {
+  const autoId = useId();
+  const boxId = id ?? autoId;
+  return (
+    <div className={clsx('flex items-start gap-2.5', className)}>
+      <input
+        ref={ref}
+        id={boxId}
+        type="checkbox"
+        className="mt-0.5 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+        {...rest}
+      />
+      <label htmlFor={boxId} className="text-sm">
+        <span className="font-medium text-gray-700">{label}</span>
+        {description && <span className="block text-xs text-gray-500">{description}</span>}
+      </label>
+    </div>
   );
 });

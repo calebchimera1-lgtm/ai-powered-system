@@ -8,9 +8,20 @@ import { AuthProvider } from '@/auth/AuthProvider';
 import { ToastProvider } from '@/components/ui/Toast';
 
 const ROLE_PERMS: Record<RoleName, string[]> = {
-  super_admin: ['users:read', 'users:manage', 'roles:read', 'audit:read'],
-  store_manager: ['users:read', 'roles:read'],
-  inventory_officer: ['products:read'],
+  super_admin: [
+    'users:read', 'users:manage', 'roles:read', 'audit:read', 'products:read', 'products:write',
+    'products:delete', 'products:view_cost', 'stock:read', 'stock:adjust', 'stock:adjust_approve',
+    'stock:adjust_negative', 'stock:write_off', 'suppliers:read', 'suppliers:write',
+  ],
+  store_manager: [
+    'users:read', 'roles:read', 'products:read', 'products:write', 'products:delete',
+    'products:view_cost', 'stock:read', 'stock:adjust', 'stock:adjust_approve', 'stock:write_off',
+    'suppliers:read', 'suppliers:write',
+  ],
+  inventory_officer: [
+    'products:read', 'products:write', 'products:view_cost', 'stock:read', 'stock:adjust',
+    'stock:write_off', 'suppliers:read', 'suppliers:write',
+  ],
   cashier: ['products:read', 'sales:create'],
 };
 
@@ -42,4 +53,31 @@ export function renderWithProviders(ui: ReactElement, { route = '/' }: { route?:
       </ToastProvider>
     </QueryClientProvider>,
   );
+}
+
+export function makeProduct(overrides: Partial<import('@/api/types').Product> = {}): import('@/api/types').Product {
+  return {
+    id: 7,
+    sku: 'SUG-2KG',
+    barcode: '2000000000015',
+    name: 'White Sugar 2kg',
+    description: null,
+    category: { id: 1, name: 'Dry goods' },
+    default_supplier: null,
+    unit_of_measure: 'pcs',
+    image_url: null,
+    selling_price: '245.00',
+    vat_rate: '16.00',
+    quantity_on_hand: '46.000',
+    min_stock_level: '15.000',
+    max_stock_level: '150.000',
+    reorder_lead_time_days: 3,
+    tracks_expiry: false,
+    is_active: true,
+    stock_status: 'ok',
+    next_expiry: null,
+    created_at: '2026-11-01T08:00:00Z',
+    updated_at: '2026-11-01T08:00:00Z',
+    ...overrides,
+  };
 }

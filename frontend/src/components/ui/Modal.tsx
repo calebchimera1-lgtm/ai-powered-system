@@ -20,12 +20,17 @@ const widths = { sm: 'sm:max-w-md', md: 'sm:max-w-lg', lg: 'sm:max-w-2xl' };
 export function Modal({ open, onClose, title, description, children, footer, size = 'md', busy }: ModalProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  // Keep the latest callbacks in refs so the effect below depends only on `open`.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
 
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) onClose();
+      if (e.key === 'Escape' && !busyRef.current) onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     const originalOverflow = document.body.style.overflow;
@@ -43,7 +48,7 @@ export function Modal({ open, onClose, title, description, children, footer, siz
       document.body.style.overflow = originalOverflow;
       previouslyFocused?.focus?.();
     };
-  }, [open, busy, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

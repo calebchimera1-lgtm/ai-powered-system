@@ -10,3 +10,5 @@ email-validator==2.2.0
 pyjwt==2.10.1
 argon2-cffi==23.1.0
 python-multipart==0.0.20
+pillow==11.0.0
+python-barcode==0.15.1

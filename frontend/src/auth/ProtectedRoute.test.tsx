@@ -61,3 +61,38 @@ describe('route guards', () => {
     expect(screen.queryByText('Users screen')).not.toBeInTheDocument();
   });
 });
+
+describe('sign-out on a shared device', () => {
+  beforeEach(() => vi.restoreAllMocks());
+
+  it('the next person to sign in starts at Home, not on the previous page', async () => {
+    const { userEvent } = await import('@testing-library/user-event').then((m) => ({ userEvent: m.default }));
+    const { authApi } = await import('@/api/auth');
+    const { useAuth } = await import('./AuthProvider');
+    const { LoginPage } = await import('@/features/auth/LoginPage');
+    vi.spyOn(authApi, 'logout').mockResolvedValue({ message: 'ok' });
+    vi.spyOn(authApi, 'login').mockResolvedValue({ access_token: 't2', token_type: 'bearer', expires_in: 900, user: makeUser('cashier', { id: 2 }) });
+    session(makeUser('super_admin'));
+
+    function SignOutButton() {
+      const { logout } = useAuth();
+      return <button onClick={() => logout()}>Sign out</button>;
+    }
+    renderWithProviders(
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<RequireAuth />}>
+          <Route path="/" element={<p>Home screen</p>} />
+          <Route path="/users" element={<><p>Users screen</p><SignOutButton /></>} />
+        </Route>
+      </Routes>,
+      { route: '/users' },
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign out' }));
+    await userEvent.type(await screen.findByLabelText(/username or email/i), 'till');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'Secret-123');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(await screen.findByText('Home screen')).toBeInTheDocument();
+    expect(screen.queryByText('Users screen')).not.toBeInTheDocument();
+  });
+});

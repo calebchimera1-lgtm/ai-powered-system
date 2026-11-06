@@ -32,6 +32,21 @@ describe('Sidebar navigation is filtered by permission', () => {
     expect(screen.queryByRole('link', { name: 'Audit log' })).not.toBeInTheDocument();
   });
 
+  it('inventory officer sees inventory and suppliers but no admin pages', async () => {
+    setup('inventory_officer');
+    expect(await screen.findByRole('link', { name: 'Products' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Stock movements' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Suppliers' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Users' })).not.toBeInTheDocument();
+  });
+
+  it('cashier sees products only, nothing administrative', async () => {
+    setup('cashier');
+    expect(await screen.findByRole('link', { name: 'Products' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Stock movements' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Suppliers' })).not.toBeInTheDocument();
+  });
+
   it('cashier sees neither', async () => {
     setup('cashier');
     expect(await screen.findByRole('link', { name: 'My account' })).toBeInTheDocument();

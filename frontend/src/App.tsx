@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
+import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from '@/auth/AuthProvider';
@@ -14,6 +15,13 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { HomePage } from '@/features/home/HomePage';
 import { UsersPage } from '@/features/users/UsersPage';
+import { CategoriesPage } from '@/features/categories/CategoriesPage';
+import { ProductDetailPage } from '@/features/products/ProductDetailPage';
+import { ProductsPage } from '@/features/products/ProductsPage';
+import { AdjustmentsPage } from '@/features/stock/AdjustmentsPage';
+import { StockMovementsPage } from '@/features/stock/StockMovementsPage';
+import { SupplierDetailPage } from '@/features/suppliers/SupplierDetailPage';
+import { SuppliersPage } from '@/features/suppliers/SuppliersPage';
 
 export function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -29,6 +37,10 @@ export function createQueryClient(): QueryClient {
   });
 }
 
+function Guard({ perms, children }: { perms: string[]; children: ReactNode }) {
+  return <RequirePermission anyOf={perms}>{children}</RequirePermission>;
+}
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -38,6 +50,13 @@ export function AppRoutes() {
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route element={<AppShell />}>
           <Route index element={<HomePage />} />
+          <Route path="/products" element={<Guard perms={[PERM.PRODUCTS_READ]}><ProductsPage /></Guard>} />
+          <Route path="/products/:id" element={<Guard perms={[PERM.PRODUCTS_READ]}><ProductDetailPage /></Guard>} />
+          <Route path="/categories" element={<Guard perms={[PERM.PRODUCTS_WRITE]}><CategoriesPage /></Guard>} />
+          <Route path="/stock/movements" element={<Guard perms={[PERM.STOCK_READ]}><StockMovementsPage /></Guard>} />
+          <Route path="/stock/adjustments" element={<Guard perms={[PERM.STOCK_READ]}><AdjustmentsPage /></Guard>} />
+          <Route path="/suppliers" element={<Guard perms={[PERM.SUPPLIERS_READ]}><SuppliersPage /></Guard>} />
+          <Route path="/suppliers/:id" element={<Guard perms={[PERM.SUPPLIERS_READ]}><SupplierDetailPage /></Guard>} />
           <Route
             path="/users"
             element={

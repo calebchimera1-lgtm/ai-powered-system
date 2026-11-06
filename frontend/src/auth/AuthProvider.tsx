@@ -22,6 +22,8 @@ interface AuthContextValue {
   user: CurrentUser | null;
   /** Set when the session ended unexpectedly (expired or revoked elsewhere). */
   sessionExpired: boolean;
+  /** True right after someone deliberately signed out (e.g. a shared till). */
+  signedOut: boolean;
   login: (username: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
   reloadUser: () => Promise<void>;
@@ -36,6 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>('loading');
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [signedOut, setSignedOut] = useState(false);
 
   const clear = useCallback(() => {
     setAccessToken(null);
@@ -77,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(data.access_token);
     setUser(data.user);
     setSessionExpired(false);
+    setSignedOut(false);
     setStatus('authenticated');
     return data.user;
   }, []);
@@ -88,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Already signed out server-side; clear locally regardless.
     }
     setSessionExpired(false);
+    setSignedOut(true);
     clear();
   }, [clear]);
 
@@ -101,13 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       status,
       user,
       sessionExpired,
+      signedOut,
       login,
       logout,
       reloadUser,
       can: (p) => granted.has(p),
       canAny: (...ps) => ps.some((p) => granted.has(p)),
     };
-  }, [status, user, sessionExpired, login, logout, reloadUser]);
+  }, [status, user, sessionExpired, signedOut, login, logout, reloadUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

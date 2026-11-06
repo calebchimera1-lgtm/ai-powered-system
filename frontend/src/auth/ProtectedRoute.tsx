@@ -9,12 +9,15 @@ import type { PermissionCode } from './permissions';
 
 /** Requires a signed-in user; forces the temporary-password change first. */
 export function RequireAuth() {
-  const { status, user } = useAuth();
+  const { status, user, signedOut } = useAuth();
   const location = useLocation();
 
   if (status === 'loading') return <FullPageSpinner label="Loading your session…" />;
   if (status === 'anonymous' || !user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    // After a deliberate sign-out the next person starts at Home, not on the previous
+    // user's page. Otherwise (deep link, expired session) return them where they were.
+    const state = signedOut ? undefined : { from: location.pathname + location.search };
+    return <Navigate to="/login" replace state={state} />;
   }
   if (user.must_change_password && location.pathname !== '/change-password') {
     return <Navigate to="/change-password" replace />;

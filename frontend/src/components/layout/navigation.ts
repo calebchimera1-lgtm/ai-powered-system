@@ -1,4 +1,15 @@
-import { History, Home, UserCircle, Users, type LucideIcon } from 'lucide-react';
+import {
+  ArrowLeftRight,
+  ClipboardCheck,
+  FolderTree,
+  History,
+  Home,
+  Package,
+  Truck,
+  UserCircle,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
 
 import { PERM, type PermissionCode } from '@/auth/permissions';
 
@@ -20,6 +31,19 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Overview',
     items: [{ to: '/', label: 'Home', icon: Home, anyOf: [] }],
+  },
+  {
+    title: 'Inventory',
+    items: [
+      { to: '/products', label: 'Products', icon: Package, anyOf: [PERM.PRODUCTS_READ] },
+      { to: '/categories', label: 'Categories', icon: FolderTree, anyOf: [PERM.PRODUCTS_WRITE] },
+      { to: '/stock/movements', label: 'Stock movements', icon: ArrowLeftRight, anyOf: [PERM.STOCK_READ] },
+      { to: '/stock/adjustments', label: 'Adjustments', icon: ClipboardCheck, anyOf: [PERM.STOCK_READ] },
+    ],
+  },
+  {
+    title: 'Purchasing',
+    items: [{ to: '/suppliers', label: 'Suppliers', icon: Truck, anyOf: [PERM.SUPPLIERS_READ] }],
   },
   {
     title: 'Administration',

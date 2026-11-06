@@ -4,6 +4,7 @@ All settings come from environment variables (or a `.env` file in development).
 Secrets such as the database password and JWT signing key are never hard-coded.
 """
 
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Literal
@@ -49,6 +50,13 @@ class Settings(BaseSettings):
 
     # --- Storage ---------------------------------------------------------
     storage_dir: Path = Path("./storage")
+    max_image_mb: int = 5
+
+    # --- Inventory rules ---------------------------------------------------
+    # Manual adjustments worth more than this (KES, at cost) need a manager's approval.
+    stock_adjustment_approval_threshold: Decimal = Decimal("5000")
+    expiry_warning_days: int = 14
+    default_vat_rate: Decimal = Decimal("16")
 
     # --- Worker ----------------------------------------------------------
     worker_poll_seconds: float = 2.0
