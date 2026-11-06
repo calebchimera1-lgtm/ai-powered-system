@@ -13,8 +13,9 @@ The full architecture, ERD and AI strategy are in [docs/00-system-design-plan.md
 |---|---|---|
 | 1. Foundation | Docker stack, database + migrations, authentication, role-based access, user management, password reset, sessions, audit log, worker queue, app shell | **Done** |
 | 2. Core inventory | Products (SKU, barcodes, photos, min/max, expiry), categories, suppliers and their prices, append-only stock ledger with weighted average cost, expiry batches (oldest first), stock counts and adjustments with manager approval, damaged/expired write-offs | **Done** |
-| 3. Sales & procurement | POS, receipts, returns, purchase orders, goods received, profit analytics | Next |
-| 4–6 | AI receipt digitization, analytics and forecasting, finalization | Planned |
+| 3. Sales & procurement | Point of sale (barcode, cash/M-Pesa/card, discounts, VAT, receipts), sales history and cash-up, returns with manager approval, purchase orders, goods received (stock, average cost, batches, supplier prices, price-change and duplicate-invoice checks), expenses, profit analytics | **Done** |
+| 4. AI receipt digitization | Invoice upload/photo, OpenCV + OCR extraction, product matching, review and approval | Next |
+| 5–6 | Forecasting and anomaly detection, dashboard, reports, finalization | Planned |
 
 ## Quick start (Docker)
 
@@ -47,8 +48,10 @@ docker compose exec -e ENVIRONMENT=development api python -m scripts.seed_demo_u
 ```
 
 ```bash
-docker compose exec -e ENVIRONMENT=development api python -m scripts.seed_demo_catalog
+docker compose exec -e ENVIRONMENT=development api python -m scripts.seed_demo_catalog --history-days 60
 ```
+
+`--history-days` (optional, up to 730) simulates that many days of trading through the real services: sales with weekly and month-end patterns, deliveries, returns and expenses. It is seeded, so it produces the same data every time. 60 days takes about a minute.
 
 API documentation (OpenAPI) is available at http://localhost:8080/api/docs.
 
@@ -95,9 +98,9 @@ cd backend && python -m pytest
 cd frontend && npm test
 ```
 
-Current results (end of Phase 2): **152 backend tests** and **44 frontend tests**, all passing. They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
+Current results (end of Phase 3): **189 backend tests** and **58 frontend tests**, all passing. They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
 
-Each phase is also exercised end-to-end in a real browser against the Docker stack. For Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
+Each phase is also exercised end-to-end in a real browser against the Docker stack. Phase 3: scanning at the till (including rapid repeat scans), cash and M-Pesa sales, a cashier return approved by a manager, a purchase order received in part with a supplier price rise flagged, a duplicate supplier invoice refused, expenses, the profit page, and the till at phone width. Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
 
 ## How stock works
 
@@ -107,6 +110,17 @@ Each phase is also exercised end-to-end in a real browser against the Docker sta
 - Stock cannot go below zero unless a Super Administrator explicitly authorises it.
 - Manual adjustments worth more than **KES 5,000** at cost wait for a Store Manager's approval (configurable: `STOCK_ADJUSTMENT_APPROVAL_THRESHOLD`). Nobody can approve their own request.
 - Cashiers see prices and stock levels, never costs or margins.
+
+## How sales and profit work
+
+- Shelf prices include VAT; VAT is extracted per line (`price × rate / (100 + rate)`). A whole-sale discount is spread across lines in proportion to their value, so each line's VAT stays correct.
+- Each sale records the cost of every line at that moment (weighted average cost), so profit is exact even when supplier prices change later.
+- Cashiers may discount up to **10%** (`MAX_CASHIER_DISCOUNT_PERCENT`); more needs a Store Manager and is recorded in the audit log.
+- The till sends a one-time request id with each sale, so a double-click or a network retry can never record the same sale twice. Two tills selling the last items at the same moment cannot oversell.
+- Returns refund the discounted price actually paid. Resaleable items go back into stock (into their original expiry batch); damaged items are refunded but count as a stock loss. Cashiers' returns wait for a manager.
+- Supplier costs are entered **excluding VAT** (input VAT is reclaimable). The same supplier invoice number cannot be received twice, and cost changes of **10%** or more are flagged (`PRICE_CHANGE_ALERT_PERCENT`).
+- Profit definitions: Revenue = sales excluding VAT, minus refunds excluding VAT. Gross profit = Revenue − cost of goods sold. Net profit (estimate) = gross profit − stock losses ± stock adjustments − operating expenses.
+- Receipt header details come from `.env`: `STORE_NAME`, `STORE_ADDRESS`, `STORE_PHONE`, `STORE_KRA_PIN`, `RECEIPT_FOOTER`.
 
 ## Security notes
 

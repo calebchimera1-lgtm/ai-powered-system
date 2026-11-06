@@ -17,7 +17,7 @@ either fully succeeds or leaves no trace.
 """
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 from sqlalchemy import func, select
@@ -101,6 +101,8 @@ def apply_movement(
     reference_id: str | int | None = None,
     reason: str | None = None,
     allow_negative: bool = False,
+    require_expiry: bool = True,
+    occurred_at: datetime | None = None,
 ) -> list[StockMovement]:
     """Apply a signed stock change. Positive = stock in, negative = stock out."""
     product = lock_product(db, product_id)
@@ -114,7 +116,7 @@ def apply_movement(
         raise ValidationFailed(f"Unknown movement type {movement_type}")
 
     ref_id = str(reference_id) if reference_id is not None else None
-    common = {
+    common: dict = {
         "product_id": product.id,
         "movement_type": movement_type,
         "user_id": user.id,
@@ -122,8 +124,12 @@ def apply_movement(
         "reference_id": ref_id,
         "reason": reason,
     }
+    if occurred_at is not None:  # only for importing/seeding historical records
+        common["created_at"] = occurred_at
     if quantity > 0:
-        return [_receive(db, product, quantity, unit_cost, batch_id, batch_info, common)]
+        return [
+            _receive(db, product, quantity, unit_cost, batch_id, batch_info, common, require_expiry)
+        ]
     return _remove(db, product, -quantity, batch_id, allow_negative, common)
 
 
@@ -135,6 +141,7 @@ def _receive(
     batch_id: int | None,
     batch_info: BatchInfo | None,
     common: dict,
+    require_expiry: bool = True,
 ) -> StockMovement:
     movement_type = common["movement_type"]
     if unit_cost is None:
@@ -145,7 +152,7 @@ def _receive(
     if unit_cost < 0:
         raise ValidationFailed("Unit cost cannot be negative")
 
-    batch = _batch_for_receipt(db, product, qty, unit_cost, batch_id, batch_info)
+    batch = _batch_for_receipt(db, product, qty, unit_cost, batch_id, batch_info, require_expiry)
 
     product.avg_cost = weighted_average_cost(
         product.quantity_on_hand, product.avg_cost, qty, unit_cost
@@ -173,6 +180,7 @@ def _batch_for_receipt(
     unit_cost: Decimal,
     batch_id: int | None,
     info: BatchInfo | None,
+    require_expiry: bool = True,
 ) -> ProductBatch | None:
     if batch_id is not None:
         batch = db.get(ProductBatch, batch_id, with_for_update=True)
@@ -183,7 +191,8 @@ def _batch_for_receipt(
         return batch
 
     info = info or BatchInfo()
-    if product.tracks_expiry and info.expiry_date is None:
+    # require_expiry=False is used for customer returns whose original batch is unknown.
+    if product.tracks_expiry and info.expiry_date is None and require_expiry:
         raise ValidationFailed(
             f"{product.name} tracks expiry dates; enter the expiry date for this stock",
             details=[{"field": "expiry_date", "message": "required for this product"}],

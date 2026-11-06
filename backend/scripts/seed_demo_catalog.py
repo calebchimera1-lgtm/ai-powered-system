@@ -1,6 +1,7 @@
 """Load a small SYNTHETIC supermarket catalogue for demonstrations.
 
-    python -m scripts.seed_demo_catalog
+    python -m scripts.seed_demo_catalog                     # catalogue only
+    python -m scripts.seed_demo_catalog --history-days 90   # plus 90 days of trading
 
 Creates categories, demo suppliers and the products named in the project brief (sugar,
 rice, cooking oil, maize flour, milk, bread, soap, bottled water) plus a few more, with
@@ -11,9 +12,11 @@ Barcodes use the in-store 20-prefix range, so they cannot clash with real produc
 Run seed_demo_users first. Refuses to run in production or if products already exist.
 """
 
+import argparse
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 
@@ -25,6 +28,7 @@ from app.schemas.stock import AdjustmentCreate, WriteOffCreate
 from app.services import inventory_service, product_service, stock_service
 from app.services.audit_service import RequestContext
 from app.utils.barcodes import internal_ean13
+from scripts.demo_history import simulate
 
 D = Decimal
 CTX = RequestContext(ip_address="127.0.0.1", user_agent="seed_demo_catalog")
@@ -45,6 +49,10 @@ SUPPLIERS = [
     ("Coast Household Supplies (Demo)", "P053333333C", "Halima Said", "+254 733 000 303"),
 ]
 
+# Illustrative VAT setting only (not tax advice): staples such as these are commonly
+# zero-rated or exempt in Kenya, so the demo sells them without VAT.
+ZERO_VAT = {"Maize Flour 2kg", "White Bread 400g", "Fresh Milk 500ml"}
+
 # name, category, supplier index, unit, sell, cost, opening qty, min, max, expiry days
 PRODUCTS = [
     ("White Sugar 2kg", "Dry goods", 0, "pcs", "245", "198", 46, 15, 150, None),
@@ -61,6 +69,17 @@ PRODUCTS = [
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Seed the synthetic demo catalogue")
+    parser.add_argument(
+        "--history-days",
+        type=int,
+        default=0,
+        help="Also simulate this many days of trading (sales, deliveries, returns, expenses)",
+    )
+    args = parser.parse_args()
+    if not 0 <= args.history_days <= 730:
+        print("--history-days must be between 0 and 730", file=sys.stderr)
+        return 2
     if get_settings().is_production:
         print("Refusing to seed demo data in production.", file=sys.stderr)
         return 1
@@ -95,9 +114,15 @@ def main() -> int:
         db.commit()
 
         today = date.today()
+        history = args.history_days
+        start = today - timedelta(days=history)
         for i, (name, cat, sup, unit, sell, cost, qty, mn, mx, exp) in enumerate(PRODUCTS, 1):
+            if history and not qty:
+                qty = mx // 2  # the simulation starts with some stock of everything
             opening = None
-            if qty:
+            if qty and history:
+                opening = None  # recorded below, dated at the start of the history
+            elif qty:
                 opening = OpeningStock(
                     quantity=D(str(qty)),
                     unit_cost=D(cost),
@@ -116,11 +141,28 @@ def main() -> int:
                     max_stock_level=D(mx),
                     tracks_expiry=exp is not None,
                     opening_stock=opening,
+                    vat_rate=D(0) if name in ZERO_VAT else D(16),
                     description="Synthetic demo product",
                 ),
                 admin,
                 CTX,
             )
+            if qty and history:
+                inventory_service.apply_movement(
+                    db,
+                    product_id=p.id,
+                    quantity=D(str(qty)),
+                    movement_type="OPENING",
+                    user=admin,
+                    unit_cost=D(cost),
+                    batch_info=inventory_service.BatchInfo(
+                        f"LOT-{i:03d}0", start + timedelta(days=min(exp, 3)) if exp else None
+                    ),
+                    reference_type="product",
+                    reference_id=p.id,
+                    reason="Opening stock",
+                    occurred_at=datetime.combine(start, time(6, 0), ZoneInfo("Africa/Nairobi")),
+                )
             p.barcode = internal_ean13(p.id)
             db.add(
                 SupplierProduct(
@@ -132,6 +174,11 @@ def main() -> int:
                 )
             )
             db.commit()
+
+        if history:
+            print(f"Simulating {history} days of trading from {start} (this takes a while)...")
+            stats = simulate(db, start=start, end=today - timedelta(days=1))
+            print("  " + ", ".join(f"{k.replace('_', ' ')}: {v}" for k, v in stats.items()))
 
         # A few events so the ledger, batches and approvals screens have something to show.
         milk = db.scalar(select(Product).where(Product.name == "Fresh Milk 500ml"))

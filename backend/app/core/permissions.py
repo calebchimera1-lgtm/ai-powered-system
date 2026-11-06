@@ -45,6 +45,7 @@ class P(StrEnum):
     SALES_CREATE = "sales:create"
     SALES_READ_OWN = "sales:read_own"
     SALES_READ_ALL = "sales:read_all"
+    SALES_DISCOUNT_ANY = "sales:discount_any"
     RETURNS_REQUEST = "returns:request"
     RETURNS_APPROVE = "returns:approve"
 
@@ -87,6 +88,7 @@ PERMISSION_DESCRIPTIONS: dict[P, str] = {
     P.SALES_CREATE: "Record sales at the point of sale",
     P.SALES_READ_OWN: "View own sales",
     P.SALES_READ_ALL: "View all sales",
+    P.SALES_DISCOUNT_ANY: "Give discounts above the cashier limit",
     P.RETURNS_REQUEST: "Request customer returns",
     P.RETURNS_APPROVE: "Approve returns and refunds",
     P.FINANCE_READ: "View revenue, cost and profit analytics",

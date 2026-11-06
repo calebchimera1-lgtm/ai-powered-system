@@ -106,7 +106,7 @@ export interface ApiErrorBody {
   error: {
     code: string;
     message: string;
-    details?: { field: string; message: string }[] | null;
+    details?: { field: string; message: string }[] | Record<string, unknown> | null;
   };
 }
 
@@ -269,4 +269,204 @@ export interface StockSummary {
   expired_in_stock: number;
   pending_adjustments: number;
   inventory_value: Decimal | null;
+}
+
+// --- Phase 3: sales, returns, purchasing, finance ---------------------------------
+
+export type PaymentMethod = 'CASH' | 'MPESA' | 'CARD';
+
+export interface SaleItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  quantity: Decimal;
+  unit_price: Decimal;
+  discount_amount: Decimal;
+  vat_rate: Decimal;
+  tax_amount: Decimal;
+  line_total: Decimal;
+  returned_quantity: Decimal;
+  unit_cost: Decimal | null;
+}
+
+export interface Sale {
+  id: number;
+  receipt_number: string;
+  sold_at: string;
+  status: 'COMPLETED' | 'PARTIALLY_RETURNED' | 'RETURNED';
+  cashier: UserBrief;
+  customer: { id: number; name: string; phone: string | null } | null;
+  subtotal: Decimal;
+  discount_total: Decimal;
+  tax_total: Decimal;
+  grand_total: Decimal;
+  cost_total: Decimal | null;
+  gross_profit: Decimal | null;
+  payment_method: PaymentMethod;
+  payment_reference: string | null;
+  amount_tendered: Decimal | null;
+  change_given: Decimal | null;
+  notes: string | null;
+  items: SaleItem[];
+}
+
+export interface SalesSummary {
+  count: number;
+  gross_total: Decimal;
+  discount_total: Decimal;
+  tax_total: Decimal;
+  refunds_total: Decimal;
+  by_method: { payment_method: PaymentMethod; count: number; total: Decimal }[];
+}
+
+export interface StoreInfo {
+  name: string;
+  address: string;
+  phone: string;
+  kra_pin: string;
+  receipt_footer: string;
+  currency: string;
+  max_cashier_discount_percent: Decimal;
+}
+
+export interface SaleReturn {
+  id: number;
+  return_number: string;
+  sale_id: number;
+  receipt_number: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reason: string;
+  refund_method: PaymentMethod;
+  refund_total: Decimal;
+  requested_by: UserBrief;
+  decided_by: UserBrief | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  created_at: string;
+  items: {
+    id: number;
+    sale_item_id: number;
+    product_id: number;
+    product_name: string;
+    quantity: Decimal;
+    refund_amount: Decimal;
+    condition: 'RESALEABLE' | 'DAMAGED';
+  }[];
+}
+
+export interface POProduct {
+  id: number;
+  sku: string;
+  name: string;
+  unit_of_measure: Unit;
+  tracks_expiry: boolean;
+  vat_rate: Decimal;
+}
+
+export type POStatus = 'DRAFT' | 'SENT' | 'PARTIAL' | 'RECEIVED' | 'CANCELLED';
+
+export interface PurchaseOrder {
+  id: number;
+  po_number: string;
+  supplier: { id: number; name: string };
+  status: POStatus;
+  order_date: string;
+  expected_date: string | null;
+  notes: string | null;
+  created_by: UserBrief;
+  sent_at: string | null;
+  created_at: string;
+  total: Decimal;
+  items: {
+    id: number;
+    product: POProduct;
+    quantity_ordered: Decimal;
+    quantity_received: Decimal;
+    unit_cost: Decimal;
+  }[];
+}
+
+export interface PriceChange {
+  product_id: number;
+  product_name: string;
+  previous_unit_cost: Decimal;
+  new_unit_cost: Decimal;
+  change_percent: Decimal;
+}
+
+export interface Purchase {
+  id: number;
+  grn_number: string;
+  supplier: { id: number; name: string };
+  purchase_order_id: number | null;
+  po_number: string | null;
+  supplier_invoice_number: string | null;
+  invoice_date: string | null;
+  received_at: string;
+  subtotal: Decimal;
+  tax_total: Decimal;
+  grand_total: Decimal;
+  source: 'MANUAL' | 'INVOICE';
+  notes: string | null;
+  received_by: UserBrief;
+  price_changes: PriceChange[];
+  items: {
+    id: number;
+    product: POProduct;
+    quantity: Decimal;
+    unit_cost: Decimal;
+    vat_rate: Decimal;
+    tax_amount: Decimal;
+    line_total: Decimal;
+    previous_unit_cost: Decimal | null;
+    batch_number: string | null;
+    expiry_date: string | null;
+  }[];
+}
+
+export interface ExpenseCategory {
+  id: number;
+  name: string;
+  is_active: boolean;
+}
+
+export interface Expense {
+  id: number;
+  category: ExpenseCategory;
+  expense_date: string;
+  amount: Decimal;
+  description: string;
+  payment_method: PaymentMethod | 'BANK';
+  reference: string | null;
+  recorded_by: UserBrief;
+  created_at: string;
+}
+
+export interface FinancialSummary {
+  date_from: string;
+  date_to: string;
+  transactions: number;
+  items_sold: Decimal;
+  sales_gross: Decimal;
+  vat_collected: Decimal;
+  refunds_gross: Decimal;
+  revenue: Decimal;
+  cost_of_goods_sold: Decimal;
+  gross_profit: Decimal;
+  gross_margin_percent: Decimal | null;
+  stock_losses: Decimal;
+  net_adjustments: Decimal;
+  operating_expenses: Decimal;
+  net_profit_estimate: Decimal;
+  purchases_total: Decimal;
+  average_basket: Decimal | null;
+  discounts_given: Decimal;
+}
+
+export interface AnalyticsOverview {
+  summary: FinancialSummary;
+  daily: { day: string; revenue: Decimal; cost_of_goods_sold: Decimal; gross_profit: Decimal; transactions: number }[];
+  by_category: { category: string; quantity: Decimal; revenue: Decimal; cost_of_goods_sold: Decimal; gross_profit: Decimal; margin_percent: Decimal | null }[];
+  top_products: { product_id: number; name: string; sku: string; category: string | null; quantity: Decimal; revenue: Decimal; cost_of_goods_sold: Decimal; gross_profit: Decimal; margin_percent: Decimal | null }[];
+  payment_methods: { payment_method: PaymentMethod; transactions: number; total: Decimal }[];
 }

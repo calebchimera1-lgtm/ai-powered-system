@@ -57,6 +57,17 @@ class Settings(BaseSettings):
     stock_adjustment_approval_threshold: Decimal = Decimal("5000")
     expiry_warning_days: int = 14
     default_vat_rate: Decimal = Decimal("16")
+    # Cashiers may discount a sale by up to this percentage without a manager.
+    max_cashier_discount_percent: Decimal = Decimal("10")
+    # Supplier price changes larger than this are flagged on goods received.
+    price_change_alert_percent: Decimal = Decimal("10")
+
+    # --- Store details (printed on receipts) -----------------------------------
+    store_name: str = "Smart Supermarket"
+    store_address: str = "Nairobi, Kenya"
+    store_phone: str = ""
+    store_kra_pin: str = ""
+    receipt_footer: str = "Thank you for shopping with us!"
 
     # --- Worker ----------------------------------------------------------
     worker_poll_seconds: float = 2.0

@@ -23,6 +23,13 @@ describe('parseError', () => {
       fieldErrors: { username: 'already taken' },
     });
   });
+  it('keeps the message when details is an object, not a list', () => {
+    const err = axiosError(409, {
+      error: { code: 'DUPLICATE_INVOICE', message: 'Invoice INV-5 was already received', details: { purchase_id: 3 } },
+    });
+    expect(parseError(err)).toEqual({ code: 'DUPLICATE_INVOICE', message: 'Invoice INV-5 was already received', fieldErrors: {} });
+  });
+
   it('explains network failures', () => {
     expect(parseError(axiosError(null)).code).toBe('NETWORK_ERROR');
   });

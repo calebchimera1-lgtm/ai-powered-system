@@ -10,6 +10,9 @@ from app.models.auth import (
 )
 from app.models.base import Base
 from app.models.catalog import Category, Product, ProductBatch
+from app.models.finance import Expense, ExpenseCategory
+from app.models.procurement import Purchase, PurchaseItem, PurchaseOrder, PurchaseOrderItem
+from app.models.sales import Customer, Sale, SaleItem, SaleReturn, SaleReturnItem
 from app.models.stock import StockAdjustment, StockMovement
 from app.models.supplier import Supplier, SupplierProduct
 from app.models.system import AuditLog, BackgroundJob
@@ -19,11 +22,22 @@ __all__ = [
     "BackgroundJob",
     "Base",
     "Category",
+    "Customer",
+    "Expense",
+    "ExpenseCategory",
     "PasswordResetToken",
     "Permission",
     "Product",
     "ProductBatch",
+    "Purchase",
+    "PurchaseItem",
+    "PurchaseOrder",
+    "PurchaseOrderItem",
     "Role",
+    "Sale",
+    "SaleItem",
+    "SaleReturn",
+    "SaleReturnItem",
     "StockAdjustment",
     "StockMovement",
     "Supplier",

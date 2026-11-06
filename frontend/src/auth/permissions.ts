@@ -16,6 +16,16 @@ export const PERM = {
   STOCK_WRITE_OFF: 'stock:write_off',
   SUPPLIERS_READ: 'suppliers:read',
   SUPPLIERS_WRITE: 'suppliers:write',
+  PURCHASES_READ: 'purchases:read',
+  PURCHASES_WRITE: 'purchases:write',
+  SALES_CREATE: 'sales:create',
+  SALES_READ_OWN: 'sales:read_own',
+  SALES_READ_ALL: 'sales:read_all',
+  SALES_DISCOUNT_ANY: 'sales:discount_any',
+  RETURNS_REQUEST: 'returns:request',
+  RETURNS_APPROVE: 'returns:approve',
+  FINANCE_READ: 'finance:read',
+  EXPENSES_WRITE: 'expenses:write',
 } as const;
 
 export type PermissionCode = (typeof PERM)[keyof typeof PERM] | (string & {});

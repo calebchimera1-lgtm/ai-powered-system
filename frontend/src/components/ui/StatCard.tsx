@@ -32,7 +32,7 @@ export function StatCard({
       </span>
       <div className="min-w-0">
         <p className="text-sm text-gray-500">{label}</p>
-        <p className="mt-0.5 break-words text-lg font-semibold leading-tight tabular-nums text-gray-900 sm:text-xl">{value}</p>
+        <p className="mt-0.5 whitespace-nowrap text-base font-semibold leading-tight tabular-nums text-gray-900 sm:text-xl">{value}</p>
         {hint && <p className="text-xs text-gray-400">{hint}</p>}
       </div>
     </div>

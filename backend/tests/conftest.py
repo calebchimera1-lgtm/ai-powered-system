@@ -33,7 +33,7 @@ from app.services.rbac_service import get_role, sync_roles_and_permissions
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PASSWORD = "Str0ng!Passw0rd"
-KEEP_TABLES = {"roles", "permissions", "role_permissions", "alembic_version"}
+KEEP_TABLES = {"roles", "permissions", "role_permissions", "alembic_version", "expense_categories"}
 
 
 def _recreate_database(url: str) -> None:

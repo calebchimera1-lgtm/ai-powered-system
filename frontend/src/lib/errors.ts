@@ -21,8 +21,12 @@ export function parseError(error: unknown): ParsedError {
     const body = error.response.data?.error;
     if (body) {
       const fieldErrors: Record<string, string> = {};
-      for (const d of body.details ?? []) {
-        if (d.field && !fieldErrors[d.field]) fieldErrors[d.field] = d.message;
+      // `details` is usually a list of field errors, but some errors carry an object
+      // (e.g. the existing record for a duplicate invoice); only lists map to fields.
+      if (Array.isArray(body.details)) {
+        for (const d of body.details) {
+          if (d && d.field && !fieldErrors[d.field]) fieldErrors[d.field] = d.message;
+        }
       }
       return { code: body.code, message: body.message, fieldErrors };
     }

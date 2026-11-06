@@ -1,6 +1,13 @@
 import {
   ArrowLeftRight,
+  ClipboardList,
   ClipboardCheck,
+  LineChart,
+  PackageCheck,
+  Receipt,
+  RotateCcw,
+  ShoppingCart,
+  Wallet,
   FolderTree,
   History,
   Home,
@@ -33,6 +40,14 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [{ to: '/', label: 'Home', icon: Home, anyOf: [] }],
   },
   {
+    title: 'Sales',
+    items: [
+      { to: '/pos', label: 'Point of sale', icon: ShoppingCart, anyOf: [PERM.SALES_CREATE] },
+      { to: '/sales', label: 'Sales', icon: Receipt, anyOf: [PERM.SALES_READ_OWN, PERM.SALES_READ_ALL] },
+      { to: '/returns', label: 'Returns', icon: RotateCcw, anyOf: [PERM.RETURNS_REQUEST, PERM.RETURNS_APPROVE] },
+    ],
+  },
+  {
     title: 'Inventory',
     items: [
       { to: '/products', label: 'Products', icon: Package, anyOf: [PERM.PRODUCTS_READ] },
@@ -43,7 +58,18 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Purchasing',
-    items: [{ to: '/suppliers', label: 'Suppliers', icon: Truck, anyOf: [PERM.SUPPLIERS_READ] }],
+    items: [
+      { to: '/suppliers', label: 'Suppliers', icon: Truck, anyOf: [PERM.SUPPLIERS_READ] },
+      { to: '/purchasing/orders', label: 'Purchase orders', icon: ClipboardList, anyOf: [PERM.PURCHASES_READ] },
+      { to: '/purchasing/receipts', label: 'Goods received', icon: PackageCheck, anyOf: [PERM.PURCHASES_READ] },
+    ],
+  },
+  {
+    title: 'Finance',
+    items: [
+      { to: '/finance', label: 'Profit and sales', icon: LineChart, anyOf: [PERM.FINANCE_READ] },
+      { to: '/expenses', label: 'Expenses', icon: Wallet, anyOf: [PERM.FINANCE_READ] },
+    ],
   },
   {
     title: 'Administration',
