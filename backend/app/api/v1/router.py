@@ -7,6 +7,7 @@ from app.api.v1 import (
     auth,
     categories,
     finance,
+    invoices,
     media,
     products,
     purchasing,
@@ -29,4 +30,5 @@ api_router.include_router(stock.router)
 api_router.include_router(sales.router)
 api_router.include_router(purchasing.router)
 api_router.include_router(finance.router)
+api_router.include_router(invoices.router)
 api_router.include_router(media.router)

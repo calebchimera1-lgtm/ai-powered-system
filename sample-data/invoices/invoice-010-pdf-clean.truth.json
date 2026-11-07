@@ -1,0 +1,46 @@
+{
+  "file": "invoice-010-pdf-clean.pdf",
+  "layout": "pdf",
+  "condition": "clean",
+  "supplier_name": "Nairobi Wholesale Distributors (Demo)",
+  "kra_pin": "P051111111A",
+  "invoice_number": "TI179046",
+  "invoice_date": "2026-10-25",
+  "subtotal": "14792.40",
+  "tax_total": "2130.05",
+  "grand_total": "16922.45",
+  "prices_include_vat": false,
+  "items": [
+    {
+      "product": "Maize Flour 2kg",
+      "description": "MAIZE FLOUR 2KG",
+      "quantity": "10",
+      "unit_price": "147.96",
+      "line_total": "1479.60",
+      "vat_rate": "0"
+    },
+    {
+      "product": "Vegetable Cooking Oil 1L",
+      "description": "VEG COOKING OIL 1LT",
+      "quantity": "48",
+      "unit_price": "277.35",
+      "line_total": "13312.80",
+      "vat_rate": "16"
+    }
+  ],
+  "text_lines": [
+    "NAIROBI WHOLESALE DISTRIBUTORS (DEMO)",
+    "Enterprise Rd, Industrial Area, Kenya",
+    "PIN: P051111111A",
+    "TAX INVOICE",
+    "Invoice No: TI179046 Date: 25-10-2026",
+    "Bill To: Smart Supermarket (Demo)",
+    "Description Qty Unit Price Amount",
+    "MAIZE FLOUR 2KG 10 147.96 1,479.60",
+    "VEG COOKING OIL 1LT 48 277.35 13,312.80",
+    "Subtotal 14,792.40",
+    "VAT 16% 2,130.05",
+    "TOTAL KES 16,922.45"
+  ],
+  "synthetic": true
+}

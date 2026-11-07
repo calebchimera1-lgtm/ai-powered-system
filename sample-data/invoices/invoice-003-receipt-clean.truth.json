@@ -1,0 +1,59 @@
+{
+  "file": "invoice-003-receipt-clean.jpg",
+  "layout": "receipt",
+  "condition": "clean",
+  "supplier_name": "Rift Valley Dairy Co-op (Demo)",
+  "kra_pin": "P052222222B",
+  "invoice_number": "SI/4598",
+  "invoice_date": "2026-10-24",
+  "subtotal": "3987.90",
+  "tax_total": "368.08",
+  "grand_total": "4355.98",
+  "prices_include_vat": true,
+  "items": [
+    {
+      "product": "Fresh Milk 500ml",
+      "description": "MILK 500ML FRESH",
+      "quantity": "24",
+      "unit_price": "47.47",
+      "line_total": "1139.28",
+      "vat_rate": "0"
+    },
+    {
+      "product": "White Bread 400g",
+      "description": "BREAD WHITE 400GM",
+      "quantity": "10",
+      "unit_price": "54.81",
+      "line_total": "548.10",
+      "vat_rate": "0"
+    },
+    {
+      "product": "Natural Yoghurt 500ml",
+      "description": "NATURAL YOGHURT 500ML",
+      "quantity": "20",
+      "unit_price": "133.43",
+      "line_total": "2668.60",
+      "vat_rate": "16"
+    }
+  ],
+  "text_lines": [
+    "RIFT VALLEY DAIRY CO-OP (DEMO)",
+    "Kenyatta Ave, Nakuru",
+    "PIN: P052222222B",
+    "CASH SALE RECEIPT",
+    "Receipt No: SI/4598",
+    "Date: 24-Oct-2026",
+    "--------------------------------------------",
+    "MILK 500ML FRESH",
+    "24 x 47.47 1,139.28",
+    "BREAD WHITE 400GM",
+    "10 x 54.81 548.10",
+    "NATURAL YOGHURT 500ML",
+    "20 x 133.43 2,668.60",
+    "--------------------------------------------",
+    "TOTAL KES 4,355.98",
+    "VAT 16% (incl) 368.08",
+    "THANK YOU"
+  ],
+  "synthetic": true
+}

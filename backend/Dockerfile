@@ -8,7 +8,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System packages for later phases (OCR, OpenCV) are added here in Phase 4.
+# Tesseract OCR (+ English data), fonts for the synthetic invoice generator, and the
+# one shared library OpenCV's headless build needs. ~60 MB in total.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng \
+       fonts-dejavu-core fonts-liberation libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 

@@ -1,0 +1,61 @@
+{
+  "file": "invoice-012-coded-phone.jpg",
+  "layout": "coded",
+  "condition": "phone",
+  "supplier_name": "Nairobi Wholesale Distributors (Demo)",
+  "kra_pin": "P051111111A",
+  "invoice_number": "SI/5272",
+  "invoice_date": "2026-10-20",
+  "subtotal": "20433.91",
+  "tax_total": "3269.43",
+  "grand_total": "23703.34",
+  "prices_include_vat": false,
+  "items": [
+    {
+      "product": "White Sugar 2kg",
+      "description": "WHT SUGAR 2KG",
+      "quantity": "36",
+      "unit_price": "207.50",
+      "line_total": "7470.00",
+      "vat_rate": "16",
+      "item_code": "S2-001"
+    },
+    {
+      "product": "Loose Sugar (per kg)",
+      "description": "SUGAR LOOSE PER KG",
+      "quantity": "25",
+      "unit_price": "103.39",
+      "line_total": "2584.75",
+      "vat_rate": "16",
+      "item_code": "S2-002"
+    },
+    {
+      "product": "Vegetable Cooking Oil 1L",
+      "description": "VEGETABLE OIL 1L",
+      "quantity": "36",
+      "unit_price": "288.31",
+      "line_total": "10379.16",
+      "vat_rate": "16",
+      "item_code": "S1-003"
+    }
+  ],
+  "text_lines": [
+    "NAIROBI WHOLESALE DISTRIBUTORS (DEMO)",
+    "Enterprise Rd, Industrial Area, Kenya",
+    "Tel: +254 760 234 787",
+    "PIN: P051111111A",
+    "TAX INVOICE",
+    "INV # SI/5272 Date: 20.10.2026",
+    "Bill To: Smart Supermarket (Demo)",
+    "Customer PIN: P051999999Z",
+    "Code Description Qty Price Total",
+    "S2-001 WHT SUGAR 2KG 36 207.50 7,470.00",
+    "S2-002 SUGAR LOOSE PER KG 25 103.39 2,584.75",
+    "S1-003 VEGETABLE OIL 1L 36 288.31 10,379.16",
+    "Subtotal 20,433.91",
+    "VAT 16% 3,269.43",
+    "TOTAL KES 23,703.34",
+    "Goods received in good order. Thank you for your business."
+  ],
+  "synthetic": true
+}

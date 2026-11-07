@@ -1,0 +1,48 @@
+{
+  "file": "invoice-009-inclusive-scan.jpg",
+  "layout": "inclusive",
+  "condition": "scan",
+  "supplier_name": "Rift Valley Dairy Co-op (Demo)",
+  "kra_pin": "P052222222B",
+  "invoice_number": "TI790993",
+  "invoice_date": "2026-10-23",
+  "subtotal": "7696.78",
+  "tax_total": "855.86",
+  "grand_total": "8552.64",
+  "prices_include_vat": true,
+  "items": [
+    {
+      "product": "Natural Yoghurt 500ml",
+      "description": "NATURAL YOGHURT 500ML",
+      "quantity": "48",
+      "unit_price": "129.27",
+      "line_total": "6204.96",
+      "vat_rate": "16"
+    },
+    {
+      "product": "Fresh Milk 500ml",
+      "description": "FRESH MILK 500ML",
+      "quantity": "48",
+      "unit_price": "48.91",
+      "line_total": "2347.68",
+      "vat_rate": "0"
+    }
+  ],
+  "text_lines": [
+    "RIFT VALLEY DAIRY CO-OP (DEMO)",
+    "Kenyatta Ave, Nakuru, Kenya",
+    "Tel: +254 762 578 984",
+    "PIN: P052222222B",
+    "INVOICE",
+    "Invoice No: TI790993 Date: 23-Oct-2026",
+    "Bill To: Smart Supermarket (Demo)",
+    "Customer PIN: P051999999Z",
+    "Qty Description Rate Amount",
+    "48 NATURAL YOGHURT 500ML 129.27 6,204.96",
+    "48 FRESH MILK 500ML 48.91 2,347.68",
+    "Total (incl. VAT) 8,552.64",
+    "VAT included 855.86",
+    "Goods received in good order. Thank you for your business."
+  ],
+  "synthetic": true
+}

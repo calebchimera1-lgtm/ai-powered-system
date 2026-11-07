@@ -1,0 +1,57 @@
+{
+  "file": "invoice-004-inclusive-clean.jpg",
+  "layout": "inclusive",
+  "condition": "clean",
+  "supplier_name": "Nairobi Wholesale Distributors (Demo)",
+  "kra_pin": "P051111111A",
+  "invoice_number": "SI/5040",
+  "invoice_date": "2026-10-24",
+  "subtotal": "24077.64",
+  "tax_total": "3852.42",
+  "grand_total": "27930.06",
+  "prices_include_vat": true,
+  "items": [
+    {
+      "product": "White Sugar 2kg",
+      "description": "WHITE SUGAR 2KG",
+      "quantity": "20",
+      "unit_price": "228.30",
+      "line_total": "4566.00",
+      "vat_rate": "16"
+    },
+    {
+      "product": "Vegetable Cooking Oil 1L",
+      "description": "VEG COOKING OIL 1LT",
+      "quantity": "30",
+      "unit_price": "341.93",
+      "line_total": "10257.90",
+      "vat_rate": "16"
+    },
+    {
+      "product": "Pishori Rice 2kg",
+      "description": "PISH RICE 2KG",
+      "quantity": "36",
+      "unit_price": "364.06",
+      "line_total": "13106.16",
+      "vat_rate": "16"
+    }
+  ],
+  "text_lines": [
+    "NAIROBI WHOLESALE DISTRIBUTORS (DEMO)",
+    "Enterprise Rd, Industrial Area, Kenya",
+    "Tel: +254 764 697 508",
+    "PIN: P051111111A",
+    "INVOICE",
+    "INV # SI/5040 Date: 24-10-2026",
+    "Bill To: Smart Supermarket (Demo)",
+    "Customer PIN: P051999999Z",
+    "Qty Description Rate Amount",
+    "20 WHITE SUGAR 2KG 228.30 4,566.00",
+    "30 VEG COOKING OIL 1LT 341.93 10,257.90",
+    "36 PISH RICE 2KG 364.06 13,106.16",
+    "Total (incl. VAT) 27,930.06",
+    "VAT included 3,852.42",
+    "Goods received in good order. Thank you for your business."
+  ],
+  "synthetic": true
+}

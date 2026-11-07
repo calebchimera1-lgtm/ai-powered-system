@@ -1,0 +1,81 @@
+{
+  "file": "invoice-002-coded-clean.jpg",
+  "layout": "coded",
+  "condition": "clean",
+  "supplier_name": "Nairobi Wholesale Distributors (Demo)",
+  "kra_pin": "P051111111A",
+  "invoice_number": "879693",
+  "invoice_date": "2026-11-05",
+  "subtotal": "20015.62",
+  "tax_total": "2632.14",
+  "grand_total": "22647.76",
+  "prices_include_vat": false,
+  "items": [
+    {
+      "product": "Loose Sugar (per kg)",
+      "description": "SUGAR LOOSE PER KG",
+      "quantity": "25",
+      "unit_price": "98.10",
+      "line_total": "2452.50",
+      "vat_rate": "16",
+      "item_code": "S1-001"
+    },
+    {
+      "product": "Vegetable Cooking Oil 1L",
+      "description": "VEG COOKING OIL 1LT",
+      "quantity": "30",
+      "unit_price": "296.74",
+      "line_total": "8902.20",
+      "vat_rate": "16",
+      "item_code": "S1-002"
+    },
+    {
+      "product": "White Sugar 2kg",
+      "description": "SUGAR WHITE 2 KG",
+      "quantity": "10",
+      "unit_price": "193.64",
+      "line_total": "1936.40",
+      "vat_rate": "16",
+      "item_code": "S1-003"
+    },
+    {
+      "product": "Maize Flour 2kg",
+      "description": "MAIZE FLOUR 2KG",
+      "quantity": "24",
+      "unit_price": "148.53",
+      "line_total": "3564.72",
+      "vat_rate": "0",
+      "item_code": "S2-004"
+    },
+    {
+      "product": "Pishori Rice 2kg",
+      "description": "RICE PISHORI 2 KG",
+      "quantity": "10",
+      "unit_price": "315.98",
+      "line_total": "3159.80",
+      "vat_rate": "16",
+      "item_code": "S2-005"
+    }
+  ],
+  "text_lines": [
+    "NAIROBI WHOLESALE DISTRIBUTORS (DEMO)",
+    "Enterprise Rd, Industrial Area, Kenya",
+    "Tel: +254 715 777 333",
+    "PIN: P051111111A",
+    "TAX INVOICE",
+    "INV # 879693 Date: 05.11.2026",
+    "Bill To: Smart Supermarket (Demo)",
+    "Customer PIN: P051999999Z",
+    "Code Description Qty Price Total",
+    "S1-001 SUGAR LOOSE PER KG 25 98.10 2,452.50",
+    "S1-002 VEG COOKING OIL 1LT 30 296.74 8,902.20",
+    "S1-003 SUGAR WHITE 2 KG 10 193.64 1,936.40",
+    "S2-004 MAIZE FLOUR 2KG 24 148.53 3,564.72",
+    "S2-005 RICE PISHORI 2 KG 10 315.98 3,159.80",
+    "Subtotal 20,015.62",
+    "VAT 16% 2,632.14",
+    "TOTAL KES 22,647.76",
+    "Goods received in good order. Thank you for your business."
+  ],
+  "synthetic": true
+}

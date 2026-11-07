@@ -1,0 +1,51 @@
+{
+  "file": "invoice-007-coded-scan.jpg",
+  "layout": "coded",
+  "condition": "scan",
+  "supplier_name": "Nairobi Wholesale Distributors (Demo)",
+  "kra_pin": "P051111111A",
+  "invoice_number": "144628",
+  "invoice_date": "2026-11-05",
+  "subtotal": "8159.75",
+  "tax_total": "1305.56",
+  "grand_total": "9465.31",
+  "prices_include_vat": false,
+  "items": [
+    {
+      "product": "Vegetable Cooking Oil 1L",
+      "description": "VEGETABLE OIL 1L",
+      "quantity": "20",
+      "unit_price": "278.75",
+      "line_total": "5575.00",
+      "vat_rate": "16",
+      "item_code": "S3-001"
+    },
+    {
+      "product": "Loose Sugar (per kg)",
+      "description": "LOOSE SUGAR KG",
+      "quantity": "25",
+      "unit_price": "103.39",
+      "line_total": "2584.75",
+      "vat_rate": "16",
+      "item_code": "S2-002"
+    }
+  ],
+  "text_lines": [
+    "NAIROBI WHOLESALE DISTRIBUTORS (DEMO)",
+    "Enterprise Rd, Industrial Area, Kenya",
+    "Tel: +254 787 533 316",
+    "PIN: P051111111A",
+    "TAX INVOICE",
+    "Invoice Number: 144628 Date: 05.11.2026",
+    "Bill To: Smart Supermarket (Demo)",
+    "Customer PIN: P051999999Z",
+    "Code Description Qty Price Total",
+    "S3-001 VEGETABLE OIL 1L 20 278.75 5,575.00",
+    "S2-002 LOOSE SUGAR KG 25 103.39 2,584.75",
+    "Subtotal 8,159.75",
+    "VAT 16% 1,305.56",
+    "TOTAL KES 9,465.31",
+    "Goods received in good order. Thank you for your business."
+  ],
+  "synthetic": true
+}

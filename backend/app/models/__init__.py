@@ -11,6 +11,7 @@ from app.models.auth import (
 from app.models.base import Base
 from app.models.catalog import Category, Product, ProductBatch
 from app.models.finance import Expense, ExpenseCategory
+from app.models.invoice import Invoice, InvoiceItem, SupplierProductAlias
 from app.models.procurement import Purchase, PurchaseItem, PurchaseOrder, PurchaseOrderItem
 from app.models.sales import Customer, Sale, SaleItem, SaleReturn, SaleReturnItem
 from app.models.stock import StockAdjustment, StockMovement
@@ -25,6 +26,8 @@ __all__ = [
     "Customer",
     "Expense",
     "ExpenseCategory",
+    "Invoice",
+    "InvoiceItem",
     "PasswordResetToken",
     "Permission",
     "Product",
@@ -42,6 +45,7 @@ __all__ = [
     "StockMovement",
     "Supplier",
     "SupplierProduct",
+    "SupplierProductAlias",
     "User",
     "UserSession",
     "role_permissions",

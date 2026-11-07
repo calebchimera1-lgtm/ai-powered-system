@@ -1,0 +1,49 @@
+{
+  "file": "invoice-001-classic-clean.jpg",
+  "layout": "classic",
+  "condition": "clean",
+  "supplier_name": "Coast Household Supplies (Demo)",
+  "kra_pin": "P053333333C",
+  "invoice_number": "INV-2026-04005",
+  "invoice_date": "2026-10-25",
+  "subtotal": "2026.68",
+  "tax_total": "324.27",
+  "grand_total": "2350.95",
+  "prices_include_vat": false,
+  "items": [
+    {
+      "product": "Bar Soap 800g",
+      "description": "BAR SOAP 800 G",
+      "quantity": "12",
+      "unit_price": "137.89",
+      "line_total": "1654.68",
+      "vat_rate": "16"
+    },
+    {
+      "product": "Bottled Water 1L",
+      "description": "DRINKING WATER 1L",
+      "quantity": "10",
+      "unit_price": "37.20",
+      "line_total": "372.00",
+      "vat_rate": "16"
+    }
+  ],
+  "text_lines": [
+    "COAST HOUSEHOLD SUPPLIES (DEMO)",
+    "Moi Ave, Mombasa, Kenya",
+    "Tel: +254 793 818 658",
+    "PIN: P053333333C",
+    "TAX INVOICE",
+    "Invoice No. INV-2026-04005 Date: 25/10/2026",
+    "Bill To: Smart Supermarket (Demo)",
+    "Customer PIN: P051999999Z",
+    "Description Qty Unit Price Amount",
+    "BAR SOAP 800 G 12 137.89 1,654.68",
+    "DRINKING WATER 1L 10 37.20 372.00",
+    "Subtotal 2,026.68",
+    "VAT 16% 324.27",
+    "TOTAL KES 2,350.95",
+    "Goods received in good order. Thank you for your business."
+  ],
+  "synthetic": true
+}

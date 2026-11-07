@@ -51,3 +51,11 @@ def cleanup(db: Session, _: dict[str, Any]) -> dict[str, Any]:
         )
     ).rowcount
     return {"sessions_deleted": sessions, "reset_tokens_deleted": tokens, "jobs_deleted": jobs}
+
+
+@handler("invoice.process")
+def process_invoice(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    """OCR and extraction for an uploaded supplier invoice (see invoice_service)."""
+    from app.services import invoice_service
+
+    return invoice_service.process(db, int(payload["invoice_id"]))
