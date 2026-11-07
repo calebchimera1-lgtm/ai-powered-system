@@ -139,6 +139,9 @@ def test_forecast_run_and_reorder(client: TestClient, shop, db: Session) -> None
     detail = client.get(f"/api/v1/forecasts/products/{sugar.id}", headers=h).json()
     actual = [p for p in detail["series"] if p["actual"] is not None and p["forecast"] is None]
     future = [p for p in detail["series"] if p["forecast"] is not None]
+    assert detail["forecast"]["next_7_days"] == pytest.approx(
+        sum(p["forecast"] for p in future[:7]), abs=0.1
+    )
     assert len(actual) == 91 and len(future) == 28
     assert all(p["lower"] <= p["forecast"] <= p["upper"] for p in future)
     # The weekly shape is learnt: weekend days forecast higher than weekdays.

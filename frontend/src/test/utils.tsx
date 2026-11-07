@@ -16,12 +16,13 @@ const ROLE_PERMS: Record<RoleName, string[]> = {
   store_manager: [
     'users:read', 'roles:read', 'products:read', 'products:write', 'products:delete',
     'products:view_cost', 'stock:read', 'stock:adjust', 'stock:adjust_approve', 'stock:write_off',
-    'suppliers:read', 'suppliers:write',
+    'suppliers:read', 'suppliers:write', 'purchases:read', 'purchases:write', 'forecasts:read',
+    'anomalies:read', 'anomalies:review',
   ],
   inventory_officer: [
     'products:read', 'products:write', 'products:view_cost', 'stock:read', 'stock:adjust',
     'stock:write_off', 'suppliers:read', 'suppliers:write', 'purchases:read', 'purchases:write',
-    'invoices:upload', 'invoices:approve',
+    'invoices:upload', 'invoices:approve', 'forecasts:read',
   ],
   cashier: ['products:read', 'sales:create'],
 };

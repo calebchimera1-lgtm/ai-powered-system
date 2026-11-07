@@ -27,7 +27,7 @@ from app.core.database import SessionLocal
 from app.models import Category, Product, Supplier, SupplierProduct, User
 from app.schemas.catalog import OpeningStock, ProductCreate
 from app.schemas.stock import AdjustmentCreate, WriteOffCreate
-from app.services import inventory_service, product_service, stock_service
+from app.services import inventory_service, job_service, product_service, stock_service
 from app.services.audit_service import RequestContext
 from app.utils.barcodes import internal_ean13
 from scripts.demo_history import simulate
@@ -239,6 +239,13 @@ def main() -> int:
             officer,
             CTX,
         )
+        if history:
+            # Learn from the new history straight away (the worker would otherwise wait
+            # for its nightly run).
+            for job in ("forecast.run", "anomaly.scan"):
+                job_service.enqueue(db, job)
+            db.commit()
+            print("  Forecast and irregularity scan queued for the worker.")
 
     print(f"Demo catalogue created: {len(PRODUCTS)} products, {len(SUPPLIERS)} suppliers.")
     return 0

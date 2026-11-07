@@ -3,7 +3,7 @@
 An inventory platform for supermarkets: inventory, POS, procurement, AI receipt/invoice digitization (OpenCV + OCR), demand forecasting, anomaly detection and financial analytics in KES.
 
 **Stack:** React + TypeScript + Tailwind · FastAPI + SQLAlchemy + Alembic · PostgreSQL 16 · Docker Compose
-· OpenCV + Tesseract OCR (Phase 4); ML libraries arrive in Phase 5.
+· OpenCV + Tesseract OCR · pandas, scikit-learn, statsmodels (all CPU-only)
 
 The full architecture, ERD and AI strategy are in [docs/00-system-design-plan.md](docs/00-system-design-plan.md).
 
@@ -15,8 +15,8 @@ The full architecture, ERD and AI strategy are in [docs/00-system-design-plan.md
 | 2. Core inventory | Products (SKU, barcodes, photos, min/max, expiry), categories, suppliers and their prices, append-only stock ledger with weighted average cost, expiry batches (oldest first), stock counts and adjustments with manager approval, damaged/expired write-offs | **Done** |
 | 3. Sales & procurement | Point of sale (barcode, cash/M-Pesa/card, discounts, VAT, receipts), sales history and cash-up, returns with manager approval, purchase orders, goods received (stock, average cost, batches, supplier prices, price-change and duplicate-invoice checks), expenses, profit analytics | **Done** |
 | 4. AI receipt digitization | Invoice photo/scan/PDF upload, OpenCV clean-up (perspective, deskew, binarise), Tesseract OCR, field and line extraction checked by arithmetic, product matching that learns supplier names, side-by-side human review, approval into stock as a goods-received note, honest accuracy evaluation | **Done** |
-| 5. Forecasting & anomalies | Demand forecasting, reorder suggestions, anomaly detection, notifications | Next |
-| 6 | Dashboard, reports (PDF/Excel/CSV), finalization | Planned |
+| 5. Forecasting & anomalies | Per-product demand forecasts (six models compared by backtest), stock-out dates, reorder points and draft purchase orders, irregularity detection (rules + Isolation Forest) with a review workflow, in-app notifications (low stock, expiry, approvals, predicted shortages, irregularities) | **Done** |
+| 6. Dashboard, reports & finalization | Owner dashboard, reports (PDF/Excel/CSV), backups, final documentation | Next |
 
 ## Quick start (Docker)
 
@@ -49,10 +49,10 @@ docker compose exec -e ENVIRONMENT=development api python -m scripts.seed_demo_u
 ```
 
 ```bash
-docker compose exec -e ENVIRONMENT=development api python -m scripts.seed_demo_catalog --history-days 60
+docker compose exec -e ENVIRONMENT=development api python -m scripts.seed_demo_catalog --history-days 180
 ```
 
-`--history-days` (optional, up to 730) simulates that many days of trading through the real services: sales with weekly and month-end patterns, deliveries, returns and expenses. It is seeded, so it produces the same data every time. 60 days takes about a minute.
+`--history-days` (optional, up to 730) simulates that many days of trading through the real services: sales with weekly and month-end patterns, deliveries, returns and expenses. It is seeded, so it produces the same data every time (`--seed` gives a different year). 180 days takes about two minutes; forecasting needs at least 8 weeks for its better models. It also records everyday back-office noise and a few labelled irregularities for the anomaly detector, and queues a forecast and an irregularity scan when it finishes.
 
 API documentation (OpenAPI) is available at http://localhost:8080/api/docs.
 
@@ -99,9 +99,9 @@ cd backend && python -m pytest
 cd frontend && npm test
 ```
 
-Current results (end of Phase 4): **246 backend tests** and **67 frontend tests**, all passing. They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
+Current results (end of Phase 5): **272 backend tests** and **73 frontend tests**, all passing. They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
 
-Each phase is also exercised end-to-end in a real browser against the Docker stack. Phase 4: a phone photo of an invoice read, corrected (invoice number, one unmatched product chosen by hand) and approved into stock; the same file refused a second time; a PDF read from its text layer; a scanned till receipt; the review screen at phone width; a cashier blocked. Phase 3: scanning at the till (including rapid repeat scans), cash and M-Pesa sales, a cashier return approved by a manager, a purchase order received in part with a supplier price rise flagged, a duplicate supplier invoice refused, expenses, the profit page, and the till at phone width. Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
+Each phase is also exercised end-to-end in a real browser against the Docker stack. Phase 5: the notification bell, the forecast list and a product's forecast chart, a draft purchase order created from reorder suggestions, a manager reviewing an irregularity (a note is required), the notification centre, the cashier kept out, and the forecast at phone width. Phase 4: a phone photo of an invoice read, corrected (invoice number, one unmatched product chosen by hand) and approved into stock; the same file refused a second time; a PDF read from its text layer; a scanned till receipt; the review screen at phone width; a cashier blocked. Phase 3: scanning at the till (including rapid repeat scans), cash and M-Pesa sales, a cashier return approved by a manager, a purchase order received in part with a supplier price rise flagged, a duplicate supplier invoice refused, expenses, the profit page, and the till at phone width. Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
 
 ## How stock works
 
@@ -122,6 +122,36 @@ Each phase is also exercised end-to-end in a real browser against the Docker sta
 - Supplier costs are entered **excluding VAT** (input VAT is reclaimable). The same supplier invoice number cannot be received twice, and cost changes of **10%** or more are flagged (`PRICE_CHANGE_ALERT_PERCENT`).
 - Profit definitions: Revenue = sales excluding VAT, minus refunds excluding VAT. Gross profit = Revenue − cost of goods sold. Net profit (estimate) = gross profit − stock losses ± stock adjustments − operating expenses.
 - Receipt header details come from `.env`: `STORE_NAME`, `STORE_ADDRESS`, `STORE_PHONE`, `STORE_KRA_PIN`, `RECEIPT_FOOTER`.
+
+## How forecasting and irregularities work
+
+**Insights → Demand forecast.** Every night (and on request) the worker learns from up to a year of daily sales.
+- Six models compete for each product: two simple baselines, a moving average, Holt-Winters, Croston for slow sellers, and a gradient-boosting model that knows weekdays, month-end paydays and Kenyan public holidays.
+- Each model forecasts past weeks it has not seen, and the most accurate one is used for that product.
+- The page shows the next 4 weeks with an 80% range, the date stock is expected to run out, and the reorder point (sales over the supplier lead time plus safety stock).
+- **Reorder suggestions** turns these into a draft purchase order per supplier, which someone checks and sends.
+
+**Insights → Irregularities** (Store Manager, Super Admin).
+- Each product's and each person's daily adjustments, write-offs, returns and refunds are compared with their own normal over the previous 90 days.
+- Clear rules (for example, many adjustments in one day) and an Isolation Forest flag unusual days. Each alert says why it was raised, what is at stake in KES, and what to check.
+- Alerts are prompts to investigate, never accusations. Alerts about a member of staff are visible only to managers, and nobody reviews their own.
+- A manager records *issue found* or *no issue*. That outcome is the honest measure of how useful the alerts are.
+
+**Notifications** (the bell) cover:
+- low and out of stock, at the moment a sale crosses the line
+- batches near expiry
+- approvals waiting
+- predicted shortages
+- irregularities
+
+Each person gets their own copy, at most once a day per item.
+
+**Accuracy, measured on a simulated year the engines were never tuned on:**
+- The chosen forecasts were about 25% more accurate than "same weekday last week" (MASE 0.75).
+- The 80% range held the real figure on 72.5% of days. It is too narrow, and the report says so.
+- Irregularity detection caught every injected case with 93% precision, but those cases are clear-cut and synthetic.
+
+Method, limits and full tables: [docs/ai/forecasting-and-anomalies.md](docs/ai/forecasting-and-anomalies.md).
 
 ## How invoice scanning works
 

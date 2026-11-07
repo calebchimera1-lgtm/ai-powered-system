@@ -84,9 +84,11 @@ def product_forecast(product_id: int, _: Reader, db: DbSession) -> ProductForeca
     """Actual sales for the last 13 weeks and the forecast with its 80% interval."""
     d = forecast_service.product_detail(db, product_id)
     pf = d["product"]
+    future = [p["forecast"] for p in d["series"] if p.get("forecast") is not None]
+    totals = {"next_7_days": round(sum(future[:7]), 1), "next_28_days": round(sum(future), 1)}
     return ProductForecastDetail(
         run=ForecastRunOut.model_validate(d["run"]),
-        forecast=_out(pf),
+        forecast=_out(pf, totals),
         scores=[
             ModelScoreOut(**s, label=forecast_service.MODEL_LABELS.get(s["model"], s["model"]))
             for s in pf.scores or []
@@ -134,6 +136,7 @@ def reorder(_: Planner, db: DbSession) -> list[ReorderGroup]:
                 on_order=pf.on_order,
                 reorder_point=pf.reorder_point,
                 stockout_date=pf.stockout_date,
+                lead_time_days=pf.lead_time_days,
                 suggested_quantity=pf.suggested_quantity,
                 unit_cost=cost,
                 line_value=value,

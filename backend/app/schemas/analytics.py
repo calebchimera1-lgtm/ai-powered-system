@@ -100,6 +100,7 @@ class ReorderLine(BaseModel):
     on_order: Decimal
     reorder_point: float
     stockout_date: date | None
+    lead_time_days: int
     suggested_quantity: Decimal
     unit_cost: Decimal | None
     line_value: Decimal | None

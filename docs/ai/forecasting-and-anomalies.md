@@ -121,7 +121,7 @@ used:
 
 | Set | Seed | Used for |
 |---|---|---|
-| Tuning | 42 | Developing and checking the engines. One change was made after looking at its results: the Isolation Forest stopped using *units sold*, because 9 of its 11 false alarms were ordinary payday and holiday sales peaks. Sales spikes still have their own rule. |
+| Tuning | 42 | Developing and checking the engines. One change was made after looking at its results: the Isolation Forest stopped using *units sold*, because 8 of its 11 false alarms were ordinary busy sales days (paydays and the end of December). Sales spikes still have their own rule. |
 | **Final test** | **2027** | Run once after all changes. These are the numbers below. |
 
 The forecasting test additionally holds out the **last 28 days**. Fitting, backtesting and
@@ -155,8 +155,10 @@ Full generated tables: [forecast-evaluation.md](forecast-evaluation.md) and
   Selecting per product came out marginally behind using gradient boosting everywhere, a
   difference well within the noise of 10 products over 4 weeks.
 - **The 80% interval held the actual figure on 72.5% of test days, not 80%.** It is too
-  narrow. The backtest errors underestimate the errors that came later, in part because the
-  test period included a month-end and October holidays.
+  narrow: the errors in this 4-week window were larger than in the backtest windows the
+  interval was calibrated on. I did not widen it after seeing this, because that would mean
+  tuning on the test set. Wider intervals (for example the 5th to 95th percentile) are a
+  simple remedy to verify on the next data.
 - **Forecasts were slightly low** (bias −0.44 units/day). Lost sales on out-of-stock days
   (914 in the simulated year) pull recorded demand below true demand.
 - **Every demo product has smooth demand**, so the intermittent-demand path (Croston/SBA and

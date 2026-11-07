@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '@/auth/AuthProvider';
 
+import { NotificationBell } from './NotificationBell';
+
 function initials(name: string): string {
   return name
     .split(/\s+/)
@@ -52,6 +54,7 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
         <Menu className="h-5 w-5" />
       </button>
       <div className="flex-1" />
+      <NotificationBell />
       <div className="relative" ref={menuRef}>
         <button
           type="button"

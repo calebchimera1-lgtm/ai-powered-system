@@ -1,5 +1,9 @@
 import {
   ArrowLeftRight,
+  Bell,
+  ShieldAlert,
+  TrendingUp,
+  ShoppingBasket,
   ClipboardList,
   ClipboardCheck,
   LineChart,
@@ -67,6 +71,14 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    title: 'Insights',
+    items: [
+      { to: '/forecasts', label: 'Demand forecast', icon: TrendingUp, anyOf: [PERM.FORECASTS_READ] },
+      { to: '/reorder', label: 'Reorder suggestions', icon: ShoppingBasket, anyOf: [PERM.PURCHASES_WRITE] },
+      { to: '/anomalies', label: 'Irregularities', icon: ShieldAlert, anyOf: [PERM.ANOMALIES_READ] },
+    ],
+  },
+  {
     title: 'Finance',
     items: [
       { to: '/finance', label: 'Profit and sales', icon: LineChart, anyOf: [PERM.FINANCE_READ] },
@@ -82,7 +94,10 @@ export const NAV_SECTIONS: NavSection[] = [
   },
   {
     title: 'Account',
-    items: [{ to: '/account', label: 'My account', icon: UserCircle, anyOf: [] }],
+    items: [
+      { to: '/notifications', label: 'Notifications', icon: Bell, anyOf: [] },
+      { to: '/account', label: 'My account', icon: UserCircle, anyOf: [] },
+    ],
   },
 ];
 

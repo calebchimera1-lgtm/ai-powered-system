@@ -19,6 +19,12 @@ import { UsersPage } from '@/features/users/UsersPage';
 import { CategoriesPage } from '@/features/categories/CategoriesPage';
 import { ExpensesPage } from '@/features/finance/ExpensesPage';
 import { PosPage } from '@/features/pos/PosPage';
+import { AnomaliesPage } from '@/features/anomalies/AnomaliesPage';
+import { AnomalyDetailPage } from '@/features/anomalies/AnomalyDetailPage';
+import { ForecastDetailPage } from '@/features/forecasting/ForecastDetailPage';
+import { ForecastsPage } from '@/features/forecasting/ForecastsPage';
+import { ReorderPage } from '@/features/forecasting/ReorderPage';
+import { NotificationsPage } from '@/features/notifications/NotificationsPage';
 import { InvoiceReviewPage } from '@/features/invoices/InvoiceReviewPage';
 import { InvoicesPage } from '@/features/invoices/InvoicesPage';
 import { GoodsReceivedDetailPage } from '@/features/purchasing/GoodsReceivedDetailPage';
@@ -82,6 +88,12 @@ export function AppRoutes() {
           <Route path="/purchasing/receipts/:id" element={<Guard perms={[PERM.PURCHASES_READ]}><GoodsReceivedDetailPage /></Guard>} />
           <Route path="/purchasing/invoices" element={<Guard perms={[PERM.INVOICES_UPLOAD, PERM.INVOICES_APPROVE]}><InvoicesPage /></Guard>} />
           <Route path="/purchasing/invoices/:id" element={<Guard perms={[PERM.INVOICES_UPLOAD, PERM.INVOICES_APPROVE]}><InvoiceReviewPage /></Guard>} />
+          <Route path="/forecasts" element={<Guard perms={[PERM.FORECASTS_READ]}><ForecastsPage /></Guard>} />
+          <Route path="/forecasts/:productId" element={<Guard perms={[PERM.FORECASTS_READ]}><ForecastDetailPage /></Guard>} />
+          <Route path="/reorder" element={<Guard perms={[PERM.PURCHASES_WRITE]}><ReorderPage /></Guard>} />
+          <Route path="/anomalies" element={<Guard perms={[PERM.ANOMALIES_READ]}><AnomaliesPage /></Guard>} />
+          <Route path="/anomalies/:id" element={<Guard perms={[PERM.ANOMALIES_READ]}><AnomalyDetailPage /></Guard>} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/finance" element={<Guard perms={[PERM.FINANCE_READ]}><Suspense fallback={<FullPageSpinner label="Loading…" />}><FinancePage /></Suspense></Guard>} />
           <Route path="/expenses" element={<Guard perms={[PERM.FINANCE_READ]}><ExpensesPage /></Guard>} />
           <Route path="/products" element={<Guard perms={[PERM.PRODUCTS_READ]}><ProductsPage /></Guard>} />

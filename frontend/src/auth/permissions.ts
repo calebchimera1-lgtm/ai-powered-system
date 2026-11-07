@@ -27,6 +27,9 @@ export const PERM = {
   RETURNS_REQUEST: 'returns:request',
   RETURNS_APPROVE: 'returns:approve',
   FINANCE_READ: 'finance:read',
+  FORECASTS_READ: 'forecasts:read',
+  ANOMALIES_READ: 'anomalies:read',
+  ANOMALIES_REVIEW: 'anomalies:review',
   EXPENSES_WRITE: 'expenses:write',
 } as const;
 
