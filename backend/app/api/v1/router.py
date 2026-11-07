@@ -3,12 +3,15 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    anomalies,
     audit,
     auth,
     categories,
     finance,
+    forecasts,
     invoices,
     media,
+    notifications,
     products,
     purchasing,
     roles,
@@ -31,4 +34,7 @@ api_router.include_router(sales.router)
 api_router.include_router(purchasing.router)
 api_router.include_router(finance.router)
 api_router.include_router(invoices.router)
+api_router.include_router(forecasts.router)
+api_router.include_router(anomalies.router)
+api_router.include_router(notifications.router)
 api_router.include_router(media.router)

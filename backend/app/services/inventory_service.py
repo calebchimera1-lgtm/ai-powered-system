@@ -126,11 +126,18 @@ def apply_movement(
     }
     if occurred_at is not None:  # only for importing/seeding historical records
         common["created_at"] = occurred_at
+    before = product.quantity_on_hand
     if quantity > 0:
-        return [
+        moves = [
             _receive(db, product, quantity, unit_cost, batch_id, batch_info, common, require_expiry)
         ]
-    return _remove(db, product, -quantity, batch_id, allow_negative, common)
+    else:
+        moves = _remove(db, product, -quantity, batch_id, allow_negative, common)
+    if occurred_at is None:  # live movements only, not imported history
+        from app.services import notification_service
+
+        notification_service.stock_level_changed(db, product, before, product.quantity_on_hand)
+    return moves
 
 
 def _receive(

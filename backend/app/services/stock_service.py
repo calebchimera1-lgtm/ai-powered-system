@@ -48,7 +48,13 @@ def _check_negative(product: Product, change: Decimal, allow_negative: bool, use
         raise PermissionDenied("Only a Super Administrator can authorise negative stock.")
 
 
-def _apply(db: Session, adj: StockAdjustment, product: Product, user: User) -> None:
+def _apply(
+    db: Session,
+    adj: StockAdjustment,
+    product: Product,
+    user: User,
+    at: datetime | None = None,
+) -> None:
     reason = REASON_LABELS[adj.reason_code] + (f": {adj.notes}" if adj.notes else "")
     inventory_service.apply_movement(
         db,
@@ -64,11 +70,17 @@ def _apply(db: Session, adj: StockAdjustment, product: Product, user: User) -> N
         reference_id=adj.id,
         reason=reason,
         allow_negative=adj.allow_negative,
+        occurred_at=at,
     )
 
 
 def create_adjustment(
-    db: Session, data: AdjustmentCreate, user: User, ctx: RequestContext
+    db: Session,
+    data: AdjustmentCreate,
+    user: User,
+    ctx: RequestContext,
+    *,
+    at: datetime | None = None,  # historical imports/demo data only; never from the API
 ) -> tuple[StockAdjustment, bool]:
     """Record an adjustment. Small ones (or by an approver) apply immediately; others wait.
 
@@ -121,15 +133,17 @@ def create_adjustment(
         status="PENDING",
         requested_by_id=user.id,
     )
+    if at is not None:
+        adj.created_at = at
     db.add(adj)
     db.flush()
 
     if not needs_approval:
         adj.status = "APPROVED"
         adj.decided_by_id = user.id
-        adj.decided_at = _now()
+        adj.decided_at = at or _now()
         adj.decision_note = "Applied immediately"
-        _apply(db, adj, product, user)
+        _apply(db, adj, product, user, at)
 
     audit_service.record(
         db,

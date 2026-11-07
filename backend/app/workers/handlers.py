@@ -59,3 +59,29 @@ def process_invoice(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     from app.services import invoice_service
 
     return invoice_service.process(db, int(payload["invoice_id"]))
+
+
+@handler("forecast.run")
+def run_forecast(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    """Backtest, choose models and forecast every product (nightly, or on request)."""
+    from app.models import User
+    from app.services import forecast_service
+
+    user = db.get(User, payload["user_id"]) if payload.get("user_id") else None
+    run = forecast_service.run(db, triggered_by=user)
+    return {"run_id": run.id, **(run.summary or {})}
+
+
+@handler("anomaly.scan")
+def scan_anomalies(db: Session, _: dict[str, Any]) -> dict[str, Any]:
+    from app.services import anomaly_service
+
+    return anomaly_service.scan(db)
+
+
+@handler("notifications.sweep")
+def sweep_notifications(db: Session, _: dict[str, Any]) -> dict[str, Any]:
+    """Expiring batches and approvals waiting (low stock is notified in real time)."""
+    from app.services import notification_service
+
+    return notification_service.sweep(db)

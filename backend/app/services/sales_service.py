@@ -485,13 +485,19 @@ def get_return(db: Session, return_id: int) -> SaleReturn:
 
 
 def approve_return(
-    db: Session, ret: SaleReturn, user: User, ctx: RequestContext, note: str | None
+    db: Session,
+    ret: SaleReturn,
+    user: User,
+    ctx: RequestContext,
+    note: str | None,
+    *,
+    at: datetime | None = None,  # historical imports/demo data only
 ) -> SaleReturn:
     if ret.status != "PENDING":
         raise ValidationFailed(f"This return is already {ret.status.lower()}")
     if ret.requested_by_id == user.id:
         raise PermissionDenied("Someone else must approve your own return request.")
-    _apply_return(db, ret, user, note=(note or "").strip() or None)
+    _apply_return(db, ret, user, note=(note or "").strip() or None, at=at)
     audit_service.record(
         db,
         action="return.approved",

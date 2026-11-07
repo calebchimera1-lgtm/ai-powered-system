@@ -13,9 +13,11 @@ Run seed_demo_users first. Refuses to run in production or if products already e
 """
 
 import argparse
+import json
 import sys
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
@@ -75,6 +77,9 @@ def main() -> int:
         type=int,
         default=0,
         help="Also simulate this many days of trading (sales, deliveries, returns, expenses)",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for the simulated history"
     )
     args = parser.parse_args()
     if not 0 <= args.history_days <= 730:
@@ -177,8 +182,16 @@ def main() -> int:
 
         if history:
             print(f"Simulating {history} days of trading from {start} (this takes a while)...")
-            stats = simulate(db, start=start, end=today - timedelta(days=1))
+            stats = simulate(db, start=start, end=today - timedelta(days=1), seed=args.seed)
+            labels = stats.pop("anomaly_labels", [])
             print("  " + ", ".join(f"{k.replace('_', ' ')}: {v}" for k, v in stats.items()))
+            if labels:
+                # Ground truth for scripts/evaluate_anomalies.py, kept out of the database
+                # so the detector cannot see it.
+                path = Path(get_settings().storage_dir) / "demo" / "anomaly-ground-truth.json"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps({"synthetic": True, "labels": labels}, indent=2))
+                print(f"  {len(labels)} injected irregularities (ground truth: {path})")
 
         # A few events so the ledger, batches and approvals screens have something to show.
         milk = db.scalar(select(Product).where(Product.name == "Fresh Milk 500ml"))

@@ -25,7 +25,13 @@ from app.workers.handlers import HANDLERS
 logger = logging.getLogger("worker")
 
 # job_type -> interval in seconds
-PERIODIC_JOBS: dict[str, int] = {"system.cleanup": 6 * 3600}
+# Job type -> interval in seconds. Each also runs once when the worker starts.
+PERIODIC_JOBS: dict[str, int] = {
+    "system.cleanup": 6 * 3600,
+    "notifications.sweep": 15 * 60,
+    "anomaly.scan": 3 * 3600,
+    "forecast.run": 24 * 3600,
+}
 
 
 class Worker:

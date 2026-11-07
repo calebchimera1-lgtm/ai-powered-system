@@ -9,7 +9,14 @@ Demand pattern (invented, but shaped like a Kenyan neighbourhood supermarket):
 * base daily rate per product, Poisson-distributed;
 * weekends about 25% busier;
 * month-end payday (28th to 2nd) about 35% busier;
-* lost sales when a product is out of stock (the customer simply doesn't buy it).
+* lost sales when a product is out of stock (the customer simply doesn't buy it);
+* ordinary back-office noise: small count corrections, the odd damaged item, customer
+  returns (mostly taken by the cashier and approved by the manager).
+
+For testing the anomaly detector, a few IRREGULARITIES are injected (shrinkage bursts,
+bursts of small adjustments, refund spikes, damage spikes). They are recorded through the
+normal services, exactly like real events, and their ground truth is returned separately
+(`stats["anomaly_labels"]`) so the detector never sees it.
 
 The random generator is seeded, so the same command produces the same data.
 """
@@ -30,7 +37,8 @@ from app.core.config import get_settings
 from app.models import Expense, ExpenseCategory, Product, ProductBatch, User
 from app.schemas.procurement import GoodsReceivedCreate, GRNLine
 from app.schemas.sales import CartLine, CheckoutRequest, ReturnCreate, ReturnLine
-from app.services import inventory_service, procurement_service, sales_service
+from app.schemas.stock import AdjustmentCreate
+from app.services import inventory_service, procurement_service, sales_service, stock_service
 from app.services.audit_service import RequestContext
 
 D = Decimal
@@ -69,6 +77,48 @@ def _day_factor(d: date) -> float:
     return f
 
 
+ANOMALY_KINDS = ("SHRINKAGE_BURST", "DAMAGE_SPIKE", "REFUND_SPIKE", "ADJUSTMENT_BURST")
+# Shelf-stable products only: perishables have their own write-off pattern.
+ANOMALY_PRODUCTS = (
+    "White Sugar 2kg",
+    "Vegetable Cooking Oil 1L",
+    "Pishori Rice 2kg",
+    "Bar Soap 800g",
+    "Bottled Water 1L",
+    "Maize Flour 2kg",
+)
+
+
+@dataclass
+class Episode:
+    kind: str
+    start: date
+    days: int
+    product: str | None
+
+
+def plan_anomalies(rng: random.Random, start: date, end: date) -> list[Episode]:
+    """Spread a few irregularities over the period (none in the first 30 days, so every
+    product has a normal history first; the last two fall in the final week)."""
+    total = (end - start).days + 1
+    if total < 45:
+        return []
+    count = max(4, total // 30)
+    first, last = start + timedelta(days=30), end - timedelta(days=9)
+    span = max((last - first).days, 1)
+    out = []
+    for k in range(count):
+        kind = ANOMALY_KINDS[k % len(ANOMALY_KINDS)]
+        day = (
+            first + timedelta(days=int(span * k / max(count - 2, 1)))
+            if k < count - 2
+            else (end - timedelta(days=6 - 3 * (k - count + 2)))
+        )
+        product = rng.choice(ANOMALY_PRODUCTS) if kind != "REFUND_SPIKE" else None
+        out.append(Episode(kind, min(day, end), 3 if kind == "SHRINKAGE_BURST" else 1, product))
+    return out
+
+
 def _poisson(rng: random.Random, lam: float) -> int:
     # Knuth's method is fine for the small rates used here.
     limit, k, p = math.exp(-lam), 0, 1.0
@@ -101,6 +151,55 @@ def simulate(db: Session, *, start: date, end: date, seed: int = 42, log=print) 
     cost = {name: p.avg_cost for name, p in products.items() if name in DEMAND}
     price_jump_day = start + (end - start) / 2
     stats = {"sales": 0, "deliveries": 0, "expired_write_offs": 0, "returns": 0, "lost_sales": 0}
+    noise = random.Random(seed + 1)  # noqa: S311 - back-office noise and injected irregularities
+    episodes = plan_anomalies(noise, start, end)
+    labels: list[dict] = []
+
+    def label(ep: Episode, entity: str, name: str, day: date, detail: str) -> None:
+        labels.append(
+            {
+                "kind": ep.kind,
+                "entity": entity,
+                "name": name,
+                "date": day.isoformat(),
+                "detail": detail,
+            }
+        )
+
+    def adjust(p: Product, change: int, user: User, when: datetime, note: str) -> bool:
+        db.refresh(p)
+        if change < 0 and p.quantity_on_hand + change < 0:
+            return False
+        stock_service.create_adjustment(
+            db,
+            AdjustmentCreate(
+                product_id=p.id,
+                quantity_change=D(change),
+                reason_code="COUNT_CORRECTION",
+                notes=note,
+            ),
+            user,
+            CTX,
+            at=when,
+        )
+        return True
+
+    def damage(p: Product, qty: int, when: datetime, note: str) -> bool:
+        db.refresh(p)
+        if p.quantity_on_hand < qty:
+            return False
+        inventory_service.apply_movement(
+            db,
+            product_id=p.id,
+            quantity=-D(qty),
+            movement_type="DAMAGED",
+            user=officer,
+            reference_type="write_off",
+            reason=f"Damaged goods: {note}",
+            occurred_at=when,
+        )
+        db.commit()
+        return True
 
     d = start
     while d <= end:
@@ -236,29 +335,79 @@ def simulate(db: Session, *, start: date, end: date, seed: int = 42, log=print) 
             sales_today.append(sale)
             stats["sales"] += 1
 
-        # 4) Occasional customer returns (about 1 in 150 sales), approved by the manager.
+        # 4) Occasional customer returns (about 1 in 150 sales). The cashier takes most of
+        #    them at the counter and the manager approves them.
+        def refund(sale, by_cashier: bool, when: datetime, reason: str | None = None) -> None:  # type: ignore[no-untyped-def]
+            item = sale.items[0]
+            body = ReturnCreate(
+                items=[
+                    ReturnLine(
+                        sale_item_id=item.id,
+                        quantity=D("1") if item.quantity >= 1 else item.quantity,
+                        condition=rng.choice(("RESALEABLE", "DAMAGED")),
+                    )
+                ],
+                reason=reason or rng.choice(("Wrong item", "Damaged packaging", "Changed mind")),
+                refund_method=sale.payment_method,
+            )
+            if by_cashier and sale.cashier_id == cashier.id:
+                ret, _ = sales_service.create_return(db, sale, body, cashier, CTX, at=when)
+                sales_service.approve_return(
+                    db, ret, manager, CTX, None, at=when + timedelta(minutes=5)
+                )
+            else:
+                sales_service.create_return(db, sale, body, manager, CTX, at=when)
+            stats["returns"] += 1
+
         for sale in sales_today:
             if rng.random() < 1 / 150:
-                item = sale.items[0]
-                sales_service.create_return(
-                    db,
-                    sale,
-                    ReturnCreate(
-                        items=[
-                            ReturnLine(
-                                sale_item_id=item.id,
-                                quantity=D("1") if item.quantity >= 1 else item.quantity,
-                                condition=rng.choice(("RESALEABLE", "DAMAGED")),
-                            )
-                        ],
-                        reason=rng.choice(("Wrong item", "Damaged packaging", "Changed mind")),
-                        refund_method=sale.payment_method,
-                    ),
-                    manager,
-                    CTX,
-                    at=_at(d, 20, 30),
+                refund(sale, noise.random() < 0.7, _at(d, 20, 30))
+
+        # 4b) Everyday back-office noise: small count corrections and the odd breakage.
+        stocked = [
+            p
+            for n, p in products.items()
+            if n in DEMAND and not DEMAND[n].weighed and not DEMAND[n].shelf_days
+        ]
+        if noise.random() < 0.10:
+            p = noise.choice(stocked)
+            change = noise.choice((-2, -1, -1, -1, 1, 1, 2))
+            adjust(p, change, officer, _at(d, 18, noise.randint(0, 59)), "Routine shelf count")
+        if noise.random() < 0.06:
+            p = noise.choice(stocked)
+            damage(p, noise.choice((1, 1, 2)), _at(d, 12, noise.randint(0, 59)), "dropped/torn")
+
+        # 4c) Injected irregularities (ground truth kept separately in `labels`).
+        for ep in episodes:
+            if not (ep.start <= d < ep.start + timedelta(days=ep.days)):
+                continue
+            p = products.get(ep.product) if ep.product else None
+            when = _at(d, 19, noise.randint(0, 50))
+            if ep.kind == "SHRINKAGE_BURST" and p is not None:
+                qty = noise.randint(6, 12)
+                if adjust(p, -qty, officer, when, "Count correction"):
+                    label(ep, "product", p.name, d, f"{qty} units adjusted out")
+                    label(ep, "user", officer.username, d, f"{qty} units of {p.name} adjusted out")
+            elif ep.kind == "ADJUSTMENT_BURST" and p is not None:
+                n = noise.randint(6, 9)
+                done = sum(
+                    adjust(p, -1, officer, when + timedelta(minutes=7 * i), "Count correction")
+                    for i in range(n)
                 )
-                stats["returns"] += 1
+                if done:
+                    label(ep, "product", p.name, d, f"{done} separate one-unit adjustments")
+                    label(ep, "user", officer.username, d, f"{done} adjustments of {p.name}")
+            elif ep.kind == "DAMAGE_SPIKE" and p is not None:
+                qty = noise.randint(10, 18)
+                if damage(p, qty, when, "damaged in store"):
+                    label(ep, "product", p.name, d, f"{qty} units written off as damaged")
+            elif ep.kind == "REFUND_SPIKE":
+                own = [s_ for s_ in sales_today if s_.cashier_id == cashier.id]
+                n = min(len(own), noise.randint(6, 9))
+                for i, sale in enumerate(noise.sample(own, n)):
+                    refund(sale, True, _at(d, 20, 35 + i), "Customer returned item")
+                if n:
+                    label(ep, "user", cashier.username, d, f"{n} refunds in one day")
 
         # 5) Running costs.
         def expense(category: str, amount: str, text: str, day: date = d) -> None:
@@ -290,4 +439,5 @@ def simulate(db: Session, *, start: date, end: date, seed: int = 42, log=print) 
         if (d - start).days % 30 == 0:
             log(f"  {d}: {stats['sales']} sales so far")
         d += timedelta(days=1)
+    stats["anomaly_labels"] = labels  # type: ignore[assignment]
     return stats
