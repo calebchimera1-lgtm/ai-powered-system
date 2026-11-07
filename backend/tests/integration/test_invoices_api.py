@@ -330,3 +330,39 @@ def test_unreadable_image_goes_to_manual_entry(client: TestClient, env, tmp_path
         client.post(f"/api/v1/invoices/{inv['id']}/approve", headers=h, json={}).status_code == 200
     )
     assert stock(client, h, sugar) == before + 5
+
+
+def test_suggested_product_needs_explicit_confirmation(client: TestClient, env, docs, db) -> None:  # type: ignore[no-untyped-def]
+    from app.models import InvoiceItem
+
+    h = env["officer"]
+    data, _ = docs["classic"]
+    inv = upload(client, h, data, "a.jpg").json()
+    process_all()
+    inv = client.get(f"/api/v1/invoices/{inv['id']}", headers=h).json()
+    first = db.get(InvoiceItem, inv["items"][0]["id"])
+    first.suggested, first.match_method = True, "FUZZY"  # as if only a fuzzy suggestion
+    db.commit()
+
+    def save(confirm: bool):  # type: ignore[no-untyped-def]
+        lines = [
+            {
+                "id": i["id"],
+                "description": i["description"],
+                "product_id": i["product"]["id"],
+                "quantity": i["quantity"],
+                "unit_price": i["unit_price"],
+                "line_total": i["line_total"],
+                "confirm_product": confirm,
+            }
+            for i in inv["items"]
+        ]
+        return client.put(f"/api/v1/invoices/{inv['id']}", headers=h, json={"items": lines})
+
+    assert save(False).json()["items"][0]["suggested"] is True  # saving is not confirming
+    r = client.post(f"/api/v1/invoices/{inv['id']}/approve", headers=h, json={})
+    assert r.status_code == 422 and "confirm the product" in r.json()["error"]["message"]
+    assert save(True).json()["items"][0]["suggested"] is False
+    assert (
+        client.post(f"/api/v1/invoices/{inv['id']}/approve", headers=h, json={}).status_code == 200
+    )

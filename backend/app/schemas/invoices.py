@@ -107,6 +107,9 @@ class ReviewLine(BaseModel):
     line_total: Money | None = None
     batch_number: str | None = Field(None, max_length=50)
     expiry_date: date | None = None
+    # Accept the matcher's suggested product for this line (default: yes, for API users
+    # who send exactly what they mean; the review screen sends false until confirmed).
+    confirm_product: bool = True
 
 
 class InvoiceReview(BaseModel):

@@ -5,6 +5,7 @@ import {
   LineChart,
   PackageCheck,
   Receipt,
+  ScanLine,
   RotateCcw,
   ShoppingCart,
   Wallet,
@@ -62,6 +63,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/suppliers', label: 'Suppliers', icon: Truck, anyOf: [PERM.SUPPLIERS_READ] },
       { to: '/purchasing/orders', label: 'Purchase orders', icon: ClipboardList, anyOf: [PERM.PURCHASES_READ] },
       { to: '/purchasing/receipts', label: 'Goods received', icon: PackageCheck, anyOf: [PERM.PURCHASES_READ] },
+      { to: '/purchasing/invoices', label: 'Scan invoices', icon: ScanLine, anyOf: [PERM.INVOICES_UPLOAD, PERM.INVOICES_APPROVE] },
     ],
   },
   {

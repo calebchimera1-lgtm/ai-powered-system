@@ -18,6 +18,8 @@ export const PERM = {
   SUPPLIERS_WRITE: 'suppliers:write',
   PURCHASES_READ: 'purchases:read',
   PURCHASES_WRITE: 'purchases:write',
+  INVOICES_UPLOAD: 'invoices:upload',
+  INVOICES_APPROVE: 'invoices:approve',
   SALES_CREATE: 'sales:create',
   SALES_READ_OWN: 'sales:read_own',
   SALES_READ_ALL: 'sales:read_all',

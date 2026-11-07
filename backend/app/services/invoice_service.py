@@ -470,8 +470,15 @@ def save_review(
             if line.product_id != item.product_id:
                 item.match_method = "MANUAL" if line.product_id else "NONE"
                 item.match_score = None
+            # A fuzzy *suggestion* stays unconfirmed until the reviewer confirms it (or
+            # picks a different product); saving the form alone does not confirm it.
+            item.suggested = (
+                item.suggested
+                and line.product_id is not None
+                and line.product_id == item.product_id
+                and not line.confirm_product
+            )
             item.product_id = line.product_id
-            item.suggested = False if line.product_id else item.suggested
             item.batch_number = line.batch_number
             item.expiry_date = line.expiry_date
             if item.original is not None and before != (

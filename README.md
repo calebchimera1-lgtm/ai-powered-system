@@ -3,7 +3,7 @@
 An inventory platform for supermarkets: inventory, POS, procurement, AI receipt/invoice digitization (OpenCV + OCR), demand forecasting, anomaly detection and financial analytics in KES.
 
 **Stack:** React + TypeScript + Tailwind · FastAPI + SQLAlchemy + Alembic · PostgreSQL 16 · Docker Compose
-(OCR and ML libraries are added in Phases 4–5.)
+· OpenCV + Tesseract OCR (Phase 4); ML libraries arrive in Phase 5.
 
 The full architecture, ERD and AI strategy are in [docs/00-system-design-plan.md](docs/00-system-design-plan.md).
 
@@ -14,8 +14,9 @@ The full architecture, ERD and AI strategy are in [docs/00-system-design-plan.md
 | 1. Foundation | Docker stack, database + migrations, authentication, role-based access, user management, password reset, sessions, audit log, worker queue, app shell | **Done** |
 | 2. Core inventory | Products (SKU, barcodes, photos, min/max, expiry), categories, suppliers and their prices, append-only stock ledger with weighted average cost, expiry batches (oldest first), stock counts and adjustments with manager approval, damaged/expired write-offs | **Done** |
 | 3. Sales & procurement | Point of sale (barcode, cash/M-Pesa/card, discounts, VAT, receipts), sales history and cash-up, returns with manager approval, purchase orders, goods received (stock, average cost, batches, supplier prices, price-change and duplicate-invoice checks), expenses, profit analytics | **Done** |
-| 4. AI receipt digitization | Invoice upload/photo, OpenCV + OCR extraction, product matching, review and approval | Next |
-| 5–6 | Forecasting and anomaly detection, dashboard, reports, finalization | Planned |
+| 4. AI receipt digitization | Invoice photo/scan/PDF upload, OpenCV clean-up (perspective, deskew, binarise), Tesseract OCR, field and line extraction checked by arithmetic, product matching that learns supplier names, side-by-side human review, approval into stock as a goods-received note, honest accuracy evaluation | **Done** |
+| 5. Forecasting & anomalies | Demand forecasting, reorder suggestions, anomaly detection, notifications | Next |
+| 6 | Dashboard, reports (PDF/Excel/CSV), finalization | Planned |
 
 ## Quick start (Docker)
 
@@ -98,9 +99,9 @@ cd backend && python -m pytest
 cd frontend && npm test
 ```
 
-Current results (end of Phase 3): **189 backend tests** and **58 frontend tests**, all passing. They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
+Current results (end of Phase 4): **246 backend tests** and **67 frontend tests**, all passing. They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
 
-Each phase is also exercised end-to-end in a real browser against the Docker stack. Phase 3: scanning at the till (including rapid repeat scans), cash and M-Pesa sales, a cashier return approved by a manager, a purchase order received in part with a supplier price rise flagged, a duplicate supplier invoice refused, expenses, the profit page, and the till at phone width. Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
+Each phase is also exercised end-to-end in a real browser against the Docker stack. Phase 4: a phone photo of an invoice read, corrected (invoice number, one unmatched product chosen by hand) and approved into stock; the same file refused a second time; a PDF read from its text layer; a scanned till receipt; the review screen at phone width; a cashier blocked. Phase 3: scanning at the till (including rapid repeat scans), cash and M-Pesa sales, a cashier return approved by a manager, a purchase order received in part with a supplier price rise flagged, a duplicate supplier invoice refused, expenses, the profit page, and the till at phone width. Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
 
 ## How stock works
 
@@ -121,6 +122,18 @@ Each phase is also exercised end-to-end in a real browser against the Docker sta
 - Supplier costs are entered **excluding VAT** (input VAT is reclaimable). The same supplier invoice number cannot be received twice, and cost changes of **10%** or more are flagged (`PRICE_CHANGE_ALERT_PERCENT`).
 - Profit definitions: Revenue = sales excluding VAT, minus refunds excluding VAT. Gross profit = Revenue − cost of goods sold. Net profit (estimate) = gross profit − stock losses ± stock adjustments − operating expenses.
 - Receipt header details come from `.env`: `STORE_NAME`, `STORE_ADDRESS`, `STORE_PHONE`, `STORE_KRA_PIN`, `RECEIPT_FOOTER`.
+
+## How invoice scanning works
+
+Purchasing → **Scan invoices**. Photograph the invoice (or upload a scan or PDF). A background worker straightens and cleans the image, reads it with Tesseract (a PDF with a text layer is read directly) and proposes the supplier, invoice number, date, totals and lines, each matched to a catalogue product.
+
+- **Nothing reaches stock until a person approves it.** The review screen shows the document beside the fields; unclear fields are highlighted, and a product matched only by a similar name must be confirmed.
+- The lines are checked by arithmetic (quantity × price = total; lines add up to the subtotal), as are the totals, the date and the cost changes. The same supplier invoice number cannot be approved twice, and the same file cannot be uploaded twice.
+- Approval creates a normal goods-received note (stock, average cost, batches, supplier prices). VAT-inclusive prices are converted to cost excluding VAT.
+- It learns: how each supplier writes each product is remembered on approval, so the next invoice matches exactly.
+- The share of lines reviewers had to correct is shown on the page. That is the real-world accuracy measure.
+
+Accuracy on 60 **synthetic** test invoices that were never used for tuning: line items F1 98.1%, date, total and supplier 100%, invoice number 90%, 0.9 s per document. Real invoices will be harder; see [docs/ai/ocr-methodology.md](docs/ai/ocr-methodology.md) for the method, failure analysis and limits, and [sample-data/invoices](sample-data/invoices) for 12 labelled synthetic samples to try.
 
 ## Security notes
 

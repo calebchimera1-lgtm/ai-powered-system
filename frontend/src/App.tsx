@@ -19,6 +19,8 @@ import { UsersPage } from '@/features/users/UsersPage';
 import { CategoriesPage } from '@/features/categories/CategoriesPage';
 import { ExpensesPage } from '@/features/finance/ExpensesPage';
 import { PosPage } from '@/features/pos/PosPage';
+import { InvoiceReviewPage } from '@/features/invoices/InvoiceReviewPage';
+import { InvoicesPage } from '@/features/invoices/InvoicesPage';
 import { GoodsReceivedDetailPage } from '@/features/purchasing/GoodsReceivedDetailPage';
 import { GoodsReceivedPage } from '@/features/purchasing/GoodsReceivedPage';
 import { PurchaseOrderDetailPage } from '@/features/purchasing/PurchaseOrderDetailPage';
@@ -78,6 +80,8 @@ export function AppRoutes() {
           <Route path="/purchasing/receive" element={<Guard perms={[PERM.PURCHASES_WRITE]}><ReceiveGoodsPage /></Guard>} />
           <Route path="/purchasing/receipts" element={<Guard perms={[PERM.PURCHASES_READ]}><GoodsReceivedPage /></Guard>} />
           <Route path="/purchasing/receipts/:id" element={<Guard perms={[PERM.PURCHASES_READ]}><GoodsReceivedDetailPage /></Guard>} />
+          <Route path="/purchasing/invoices" element={<Guard perms={[PERM.INVOICES_UPLOAD, PERM.INVOICES_APPROVE]}><InvoicesPage /></Guard>} />
+          <Route path="/purchasing/invoices/:id" element={<Guard perms={[PERM.INVOICES_UPLOAD, PERM.INVOICES_APPROVE]}><InvoiceReviewPage /></Guard>} />
           <Route path="/finance" element={<Guard perms={[PERM.FINANCE_READ]}><Suspense fallback={<FullPageSpinner label="Loading…" />}><FinancePage /></Suspense></Guard>} />
           <Route path="/expenses" element={<Guard perms={[PERM.FINANCE_READ]}><ExpensesPage /></Guard>} />
           <Route path="/products" element={<Guard perms={[PERM.PRODUCTS_READ]}><ProductsPage /></Guard>} />

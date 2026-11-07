@@ -27,6 +27,6 @@ Each document has a `.truth.json` beside it, with the correct fields, lines and 
 text. `python -m scripts.evaluate_ocr --data ../sample-data/invoices` scores the system
 against them.
 
-To try them in the app, seed the demo catalogue (`make seed`); it includes the
+To try them in the app, seed the demo catalogue (see the main README: `scripts.seed_demo_catalog`), which includes the
 matching suppliers and products. Then upload any of these files under
 **Purchasing → Scan invoices**.
