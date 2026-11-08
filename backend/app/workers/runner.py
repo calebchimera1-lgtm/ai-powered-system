@@ -31,6 +31,7 @@ PERIODIC_JOBS: dict[str, int] = {
     "notifications.sweep": 15 * 60,
     "anomaly.scan": 3 * 3600,
     "forecast.run": 24 * 3600,
+    "system.backup": 24 * 3600,
 }
 
 

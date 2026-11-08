@@ -6,7 +6,9 @@ from app.api.v1 import (
     anomalies,
     audit,
     auth,
+    backups,
     categories,
+    dashboard,
     finance,
     forecasts,
     invoices,
@@ -14,6 +16,7 @@ from app.api.v1 import (
     notifications,
     products,
     purchasing,
+    reports,
     roles,
     sales,
     stock,
@@ -34,7 +37,10 @@ api_router.include_router(sales.router)
 api_router.include_router(purchasing.router)
 api_router.include_router(finance.router)
 api_router.include_router(invoices.router)
+api_router.include_router(dashboard.router)
 api_router.include_router(forecasts.router)
 api_router.include_router(anomalies.router)
 api_router.include_router(notifications.router)
+api_router.include_router(reports.router)
+api_router.include_router(backups.router)
 api_router.include_router(media.router)

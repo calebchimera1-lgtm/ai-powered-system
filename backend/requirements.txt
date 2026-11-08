@@ -26,3 +26,4 @@ pandas==2.2.3
 scikit-learn==1.5.2
 statsmodels==0.14.4
 holidays==0.60
+openpyxl==3.1.5

@@ -2,6 +2,8 @@ import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '@/auth/AuthProvider';
+import { PERM } from '@/auth/permissions';
+import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { Card, PageHeader } from '@/components/ui/Card';
 import { visibleSections } from '@/components/layout/navigation';
 import { formatDateTime } from '@/lib/format';
@@ -16,8 +18,9 @@ function greeting(): string {
 }
 
 export function HomePage() {
-  const { user, canAny } = useAuth();
+  const { user, canAny, can } = useAuth();
   if (!user) return null;
+  if (can(PERM.DASHBOARD_READ)) return <DashboardPage greeting={greeting()} />;
   const shortcuts = visibleSections(canAny)
     .flatMap((s) => s.items)
     .filter((i) => i.to !== '/');

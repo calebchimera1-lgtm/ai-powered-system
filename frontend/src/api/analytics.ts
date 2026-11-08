@@ -200,3 +200,135 @@ export const notificationsApi = {
   unreadCount: () => api.get<{ unread: number }>('/notifications/unread-count').then((r) => r.data.unread),
   markRead: (ids?: number[]) => api.post<{ updated: number }>('/notifications/read', { ids: ids ?? null }).then((r) => r.data),
 };
+
+// --- Dashboard -------------------------------------------------------------------------
+
+export interface Dashboard {
+  date_from: string;
+  date_to: string;
+  category_id: number | null;
+  inventory: {
+    total_products: number;
+    out_of_stock: number;
+    low_stock: number;
+    low_stock_items: { product_id: number; name: string; on_hand: Decimal; min_stock: Decimal; unit: string }[];
+    expiring_soon: number;
+    expiring_items: { product_id: number; name: string; expiry_date: string; quantity: Decimal; unit: string; expired: boolean }[];
+    inventory_value: Decimal | null;
+  };
+  movers: {
+    fast: Mover[];
+    slow: Mover[];
+  };
+  shortages: { product_id: number; name: string; stockout_date: string; lead_time_days: number; suggested_quantity: Decimal; unit: string }[];
+  approvals: {
+    invoices_to_review: number;
+    purchase_orders_draft: number;
+    purchase_orders_open: number;
+    adjustments_pending: number;
+    returns_pending: number;
+  };
+  sales: {
+    today_revenue: Decimal;
+    today_transactions: number;
+    month_revenue: Decimal;
+    month_gross_profit: Decimal;
+    period_revenue: Decimal;
+    period_gross_profit: Decimal;
+    period_transactions: number;
+    gross_margin_percent: Decimal | null;
+    trend: { day: string; revenue: Decimal; gross_profit: Decimal }[];
+  } | null;
+  categories: { category: string; revenue: Decimal; gross_profit: Decimal }[] | null;
+  open_irregularities: number | null;
+}
+
+export interface Mover {
+  product_id: number;
+  name: string;
+  unit: string;
+  per_day: number;
+  on_hand: Decimal;
+  days_of_cover: number | null;
+}
+
+export const dashboardApi = {
+  get: (q: { date_from?: string; date_to?: string; category_id?: number | null }) =>
+    api.get<Dashboard>('/dashboard', { params: clean(q) }).then((r) => r.data),
+};
+
+// --- Reports ---------------------------------------------------------------------------
+
+export interface ReportType {
+  key: string;
+  title: string;
+  description: string;
+  uses_period: boolean;
+  formats: ('pdf' | 'xlsx' | 'csv')[];
+}
+
+export const reportsApi = {
+  list: () => api.get<ReportType[]>('/reports').then((r) => r.data),
+  /** Download a report file; returns its name. Errors come back as JSON inside a Blob. */
+  download: async (key: string, q: { format: string; date_from?: string; date_to?: string; category_id?: number | null }) => {
+    try {
+      const r = await api.get<Blob>(`/reports/${key}`, { params: clean(q), responseType: 'blob', timeout: 120_000 });
+      const name = /filename="([^"]+)"/.exec(String(r.headers['content-disposition'] ?? ''))?.[1] ?? `${key}.${q.format}`;
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      return name;
+    } catch (e) {
+      const data = (e as { response?: { data?: unknown } }).response?.data;
+      if (data instanceof Blob) {
+        try {
+          (e as { response: { data: unknown } }).response.data = JSON.parse(await data.text());
+        } catch {
+          /* not JSON: keep the original error */
+        }
+      }
+      throw e;
+    }
+  },
+};
+
+// --- Backups ---------------------------------------------------------------------------
+
+export interface Backup {
+  name: string;
+  kind: 'daily' | 'manual';
+  created_at: string;
+  schema_revision: string;
+  row_counts: Record<string, number>;
+  files: Record<string, { bytes: number; sha256: string }>;
+  verified: boolean;
+  total_bytes: number;
+}
+
+export interface BackupListing {
+  backups: Backup[];
+  running: boolean;
+  last_error: string | null;
+  policy: { daily: number; weekly: number; manual: number };
+}
+
+export const backupsApi = {
+  list: () => api.get<BackupListing>('/system/backups').then((r) => r.data),
+  create: () => api.post<{ job_id: number; message: string }>('/system/backups').then((r) => r.data),
+  download: async (name: string, file: string) => {
+    const r = await api.get<Blob>(`/system/backups/${name}/${file}`, { responseType: 'blob', timeout: 300_000 });
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name}-${file}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  },
+};

@@ -12,6 +12,7 @@ const ROLE_PERMS: Record<RoleName, string[]> = {
     'users:read', 'users:manage', 'roles:read', 'audit:read', 'products:read', 'products:write',
     'products:delete', 'products:view_cost', 'stock:read', 'stock:adjust', 'stock:adjust_approve',
     'stock:adjust_negative', 'stock:write_off', 'suppliers:read', 'suppliers:write',
+    'backups:manage',
   ],
   store_manager: [
     'users:read', 'roles:read', 'products:read', 'products:write', 'products:delete',

@@ -24,6 +24,8 @@ import { AnomalyDetailPage } from '@/features/anomalies/AnomalyDetailPage';
 import { ForecastDetailPage } from '@/features/forecasting/ForecastDetailPage';
 import { ForecastsPage } from '@/features/forecasting/ForecastsPage';
 import { ReorderPage } from '@/features/forecasting/ReorderPage';
+import { BackupsPage } from '@/features/admin/BackupsPage';
+import { ReportsPage } from '@/features/reports/ReportsPage';
 import { NotificationsPage } from '@/features/notifications/NotificationsPage';
 import { InvoiceReviewPage } from '@/features/invoices/InvoiceReviewPage';
 import { InvoicesPage } from '@/features/invoices/InvoicesPage';
@@ -94,6 +96,8 @@ export function AppRoutes() {
           <Route path="/anomalies" element={<Guard perms={[PERM.ANOMALIES_READ]}><AnomaliesPage /></Guard>} />
           <Route path="/anomalies/:id" element={<Guard perms={[PERM.ANOMALIES_READ]}><AnomalyDetailPage /></Guard>} />
           <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/admin/backups" element={<Guard perms={[PERM.BACKUPS_MANAGE]}><BackupsPage /></Guard>} />
+          <Route path="/reports" element={<Guard perms={[PERM.REPORTS_ALL, PERM.REPORTS_INVENTORY, PERM.REPORTS_OWN_SALES]}><ReportsPage /></Guard>} />
           <Route path="/finance" element={<Guard perms={[PERM.FINANCE_READ]}><Suspense fallback={<FullPageSpinner label="Loading…" />}><FinancePage /></Suspense></Guard>} />
           <Route path="/expenses" element={<Guard perms={[PERM.FINANCE_READ]}><ExpensesPage /></Guard>} />
           <Route path="/products" element={<Guard perms={[PERM.PRODUCTS_READ]}><ProductsPage /></Guard>} />

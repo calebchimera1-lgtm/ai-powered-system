@@ -74,8 +74,10 @@ def _database() -> Iterator[None]:
 def _clean_tables() -> Iterator[None]:
     yield
     from app.api.v1.auth import login_limiter
+    from app.api.v1.reports import report_limiter
 
     login_limiter.reset()
+    report_limiter.reset()
     with engine.begin() as conn:
         tables = [
             r[0]

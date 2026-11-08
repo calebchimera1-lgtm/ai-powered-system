@@ -9,10 +9,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Tesseract OCR (+ English data), fonts for the synthetic invoice generator, and the
-# one shared library OpenCV's headless build needs. ~60 MB in total.
+# one shared library OpenCV's headless build needs; postgresql-client for backups (pg_dump).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-eng \
-       fonts-dejavu-core fonts-liberation libglib2.0-0 \
+       fonts-dejavu-core fonts-liberation libglib2.0-0 postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

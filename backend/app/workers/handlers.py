@@ -85,3 +85,16 @@ def sweep_notifications(db: Session, _: dict[str, Any]) -> dict[str, Any]:
     from app.services import notification_service
 
     return notification_service.sweep(db)
+
+
+@handler("system.backup")
+def backup(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    """Nightly (or on request) database + uploaded files backup, then rotation."""
+    from app.services import backup_service
+
+    result = backup_service.create(db, kind=payload.get("kind", "daily"))
+    return {
+        "name": result["name"],
+        "removed": result["removed"],
+        "bytes": sum(f["bytes"] for f in result["files"].values()),
+    }

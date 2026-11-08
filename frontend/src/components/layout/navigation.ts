@@ -1,6 +1,8 @@
 import {
   ArrowLeftRight,
   Bell,
+  DatabaseBackup,
+  FileBarChart,
   ShieldAlert,
   TrendingUp,
   ShoppingBasket,
@@ -76,6 +78,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { to: '/forecasts', label: 'Demand forecast', icon: TrendingUp, anyOf: [PERM.FORECASTS_READ] },
       { to: '/reorder', label: 'Reorder suggestions', icon: ShoppingBasket, anyOf: [PERM.PURCHASES_WRITE] },
       { to: '/anomalies', label: 'Irregularities', icon: ShieldAlert, anyOf: [PERM.ANOMALIES_READ] },
+      { to: '/reports', label: 'Reports', icon: FileBarChart, anyOf: [PERM.REPORTS_ALL, PERM.REPORTS_INVENTORY, PERM.REPORTS_OWN_SALES] },
     ],
   },
   {
@@ -90,6 +93,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/users', label: 'Users', icon: Users, anyOf: [PERM.USERS_READ] },
       { to: '/audit-log', label: 'Audit log', icon: History, anyOf: [PERM.AUDIT_READ] },
+      { to: '/admin/backups', label: 'Backups', icon: DatabaseBackup, anyOf: [PERM.BACKUPS_MANAGE] },
     ],
   },
   {

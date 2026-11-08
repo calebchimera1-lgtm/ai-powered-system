@@ -152,6 +152,7 @@ ROLE_PERMISSIONS: dict[RoleName, frozenset[P]] = {
             P.INVOICES_APPROVE,
             P.FORECASTS_READ,
             P.REPORTS_INVENTORY,
+            P.DASHBOARD_READ,  # stock and forecast panels; money figures need FINANCE_READ
         }
     ),
     RoleName.CASHIER: frozenset(

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
-import type { AnalyticsOverview } from '@/api/types';
 import { formatKES } from '@/lib/format';
 
 // Categorical slots 1 and 2 of the validated chart palette (light surface):
@@ -13,7 +12,9 @@ const dayLabel = (iso: string) =>
 
 const compact = (n: number) => new Intl.NumberFormat('en-KE', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
 
-type Point = AnalyticsOverview['daily'][number];
+/** One day; `transactions` is optional (the dashboard trend does not carry it). */
+export interface TrendDay { day: string; revenue: string | number; gross_profit: string | number; transactions?: number }
+type Point = TrendDay;
 
 function ChartTooltip({ active, payload }: { active?: boolean; payload?: { payload: Point }[] }) {
   if (!active || !payload?.length) return null;
@@ -23,13 +24,13 @@ function ChartTooltip({ active, payload }: { active?: boolean; payload?: { paylo
       <p className="mb-1 font-semibold text-gray-900">{dayLabel(p.day)}</p>
       <p className="flex items-center gap-2 text-gray-700"><span className="h-0.5 w-3" style={{ background: SERIES.revenue }} />Revenue <span className="ml-auto pl-3 tabular-nums text-gray-900">{formatKES(p.revenue)}</span></p>
       <p className="flex items-center gap-2 text-gray-700"><span className="h-0.5 w-3" style={{ background: SERIES.profit }} />Gross profit <span className="ml-auto pl-3 tabular-nums text-gray-900">{formatKES(p.gross_profit)}</span></p>
-      <p className="mt-1 text-gray-500">{p.transactions} sale{p.transactions === 1 ? '' : 's'}</p>
+      {p.transactions !== undefined && <p className="mt-1 text-gray-500">{p.transactions} sale{p.transactions === 1 ? '' : 's'}</p>}
     </div>
   );
 }
 
 /** Daily revenue and gross profit: one KES axis, two thin lines, crosshair tooltip. */
-export function RevenueChart({ data }: { data: AnalyticsOverview['daily'] }) {
+export function RevenueChart({ data }: { data: TrendDay[] }) {
   const [asTable, setAsTable] = useState(false);
   const rows = data.map((d) => ({ ...d, revenue: Number(d.revenue), gross_profit: Number(d.gross_profit) }));
   const last = rows[rows.length - 1];
@@ -48,11 +49,11 @@ export function RevenueChart({ data }: { data: AnalyticsOverview['daily'] }) {
         <div className="max-h-72 overflow-auto rounded-lg border border-gray-200">
           <table className="min-w-full text-sm">
             <thead className="sticky top-0 bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
-              <tr><th className="px-3 py-2">Day</th><th className="px-3 py-2 text-right">Sales</th><th className="px-3 py-2 text-right">Revenue</th><th className="px-3 py-2 text-right">Gross profit</th></tr>
+              <tr><th className="px-3 py-2">Day</th>{rows[0]?.transactions !== undefined && <th className="px-3 py-2 text-right">Sales</th>}<th className="px-3 py-2 text-right">Revenue</th><th className="px-3 py-2 text-right">Gross profit</th></tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {rows.map((r) => (
-                <tr key={r.day}><td className="px-3 py-1.5">{dayLabel(r.day)}</td><td className="px-3 py-1.5 text-right tabular-nums">{r.transactions}</td>
+                <tr key={r.day}><td className="px-3 py-1.5">{dayLabel(r.day)}</td>{r.transactions !== undefined && <td className="px-3 py-1.5 text-right tabular-nums">{r.transactions}</td>}
                   <td className="px-3 py-1.5 text-right tabular-nums">{formatKES(r.revenue)}</td><td className="px-3 py-1.5 text-right tabular-nums">{formatKES(r.gross_profit)}</td></tr>
               ))}
             </tbody>
