@@ -113,7 +113,7 @@ function Body({ d }: { d: Dashboard }) {
           hint={d.inventory.out_of_stock ? `${d.inventory.out_of_stock} out of stock` : 'At or below minimum'} />
         <Attention to="/products?stock=expiring" icon={<CalendarClock className="h-5 w-5" />} label="Expiring soon" value={d.inventory.expiring_soon} hint="Products with a batch near expiry" />
         <Attention to="/reorder" icon={<TrendingDown className="h-5 w-5" />} label="Predicted shortages" value={d.shortages.length} hint="May run out before a delivery" />
-        <Attention to="/purchasing/invoices" icon={<ClipboardCheck className="h-5 w-5" />} label="Pending approvals" value={pending}
+        <Attention to={a.invoices_to_review ? '/purchasing/invoices' : a.adjustments_pending ? '/stock/adjustments' : a.returns_pending ? '/returns' : '/purchasing/orders'} icon={<ClipboardCheck className="h-5 w-5" />} label="Pending approvals" value={pending}
           hint={[a.invoices_to_review && `${a.invoices_to_review} invoices`, a.purchase_orders_draft && `${a.purchase_orders_draft} draft orders`, a.adjustments_pending && `${a.adjustments_pending} adjustments`, a.returns_pending && `${a.returns_pending} returns`].filter(Boolean).join(' · ') || 'Nothing waiting'} />
         {d.open_irregularities !== null && (
           <Attention to="/anomalies" icon={<ShieldAlert className="h-5 w-5" />} label="Irregularities to review" value={d.open_irregularities} hint="Medium or high severity" />

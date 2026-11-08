@@ -5,7 +5,14 @@ An inventory platform for supermarkets: inventory, POS, procurement, AI receipt/
 **Stack:** React + TypeScript + Tailwind · FastAPI + SQLAlchemy + Alembic · PostgreSQL 16 · Docker Compose
 · OpenCV + Tesseract OCR · pandas, scikit-learn, statsmodels (all CPU-only)
 
-The full architecture, ERD and AI strategy are in [docs/00-system-design-plan.md](docs/00-system-design-plan.md).
+**Documentation:** [docs/README.md](docs/README.md) lists everything:
+- architecture, use-case and data-flow diagrams
+- ERD and database schema
+- API reference
+- AI methods and evaluations
+- testing
+- installation
+- user manual
 
 ## Status
 
@@ -16,7 +23,7 @@ The full architecture, ERD and AI strategy are in [docs/00-system-design-plan.md
 | 3. Sales & procurement | Point of sale (barcode, cash/M-Pesa/card, discounts, VAT, receipts), sales history and cash-up, returns with manager approval, purchase orders, goods received (stock, average cost, batches, supplier prices, price-change and duplicate-invoice checks), expenses, profit analytics | **Done** |
 | 4. AI receipt digitization | Invoice photo/scan/PDF upload, OpenCV clean-up (perspective, deskew, binarise), Tesseract OCR, field and line extraction checked by arithmetic, product matching that learns supplier names, side-by-side human review, approval into stock as a goods-received note, honest accuracy evaluation | **Done** |
 | 5. Forecasting & anomalies | Per-product demand forecasts (six models compared by backtest), stock-out dates, reorder points and draft purchase orders, irregularity detection (rules + Isolation Forest) with a review workflow, in-app notifications (low stock, expiry, approvals, predicted shortages, irregularities) | **Done** |
-| 6. Dashboard, reports & finalization | Owner dashboard, reports (PDF/Excel/CSV), backups, final documentation | Next |
+| 6. Dashboard, reports & finalization | Management dashboard with date and category filters, 10 reports in PDF/Excel/CSV, nightly verified backups with tested restore, end-to-end test of the demonstration scenario, full documentation | **Done** |
 
 ## Quick start (Docker)
 
@@ -99,9 +106,9 @@ cd backend && python -m pytest
 cd frontend && npm test
 ```
 
-Current results (end of Phase 5): **272 backend tests** and **73 frontend tests**, all passing. They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
+Current results (end of Phase 6): **287 backend tests** and **77 frontend tests**, all passing; see [docs/testing.md](docs/testing.md). They include hand-computed weighted-average-cost and margin checks, oldest-expiry-first batch deduction, the negative-stock guard, the append-only ledger trigger, and two concurrency tests (two tills selling the last stock at the same moment cannot oversell).
 
-Each phase is also exercised end-to-end in a real browser against the Docker stack. Phase 5: the notification bell, the forecast list and a product's forecast chart, a draft purchase order created from reorder suggestions, a manager reviewing an irregularity (a note is required), the notification centre, the cashier kept out, and the forecast at phone width. Phase 4: a phone photo of an invoice read, corrected (invoice number, one unmatched product chosen by hand) and approved into stock; the same file refused a second time; a PDF read from its text layer; a scanned till receipt; the review screen at phone width; a cashier blocked. Phase 3: scanning at the till (including rapid repeat scans), cash and M-Pesa sales, a cashier return approved by a manager, a purchase order received in part with a supplier price rise flagged, a duplicate supplier invoice refused, expenses, the profit page, and the till at phone width. Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
+Each phase is also exercised end-to-end in a real browser against the Docker stack. Phase 6 (on a fresh clone installed by following [docs/installation.md](docs/installation.md)): the manager's dashboard with period and category filters, downloading reports in each format, the officer's stock-only dashboard and inventory reports, the cashier limited to their own daily sales, a backup from the Backups page, and the dashboard at phone width. Phase 5: the notification bell, the forecast list and a product's forecast chart, a draft purchase order created from reorder suggestions, a manager reviewing an irregularity (a note is required), the notification centre, the cashier kept out, and the forecast at phone width. Phase 4: a phone photo of an invoice read, corrected (invoice number, one unmatched product chosen by hand) and approved into stock; the same file refused a second time; a PDF read from its text layer; a scanned till receipt; the review screen at phone width; a cashier blocked. Phase 3: scanning at the till (including rapid repeat scans), cash and M-Pesa sales, a cashier return approved by a manager, a purchase order received in part with a supplier price rise flagged, a duplicate supplier invoice refused, expenses, the profit page, and the till at phone width. Phase 2: barcode/typo search, creating a product with opening stock, photo upload, barcode generation, a count correction, a large adjustment held for and approved by a manager, a write-off, and the cashier's read-only phone view.
 
 ## How stock works
 
@@ -164,6 +171,12 @@ Purchasing → **Scan invoices**. Photograph the invoice (or upload a scan or PD
 - The share of lines reviewers had to correct is shown on the page. That is the real-world accuracy measure.
 
 Accuracy on 60 **synthetic** test invoices that were never used for tuning: line items F1 98.1%, date, total and supplier 100%, invoice number 90%, 0.9 s per document. Real invoices will be harder; see [docs/ai/ocr-methodology.md](docs/ai/ocr-methodology.md) for the method, failure analysis and limits, and [sample-data/invoices](sample-data/invoices) for 12 labelled synthetic samples to try.
+
+## Dashboard, reports and backups
+
+- **Home** is the management dashboard for managers, admins and inventory officers. Officers see the stock and forecast panels without money figures. It covers today's and the period's sales, gross profit, stock value, low stock, expiry, predicted shortages, pending approvals, irregularities, revenue by day and category, and fast and slow movers. Filter by period and category.
+- **Insights → Reports** has 10 reports as PDF, Excel or CSV: inventory valuation, daily and monthly sales, profitability, purchase history, supplier performance, stock movement summary, expired and damaged stock, irregularities, and demand forecast. What you can download depends on your role, and every export is audited.
+- **Backups** run nightly: a database dump plus uploaded files, checksummed and verified, keeping 7 daily, 4 weekly and 5 manual backups. A Super Admin can make and download them under **Administration → Backups**. To restore, use `make restore NAME=…`; it was tested end to end and is described in [docs/installation.md](docs/installation.md#4-backups-and-recovery).
 
 ## Security notes
 

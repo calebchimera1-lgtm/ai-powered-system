@@ -195,14 +195,17 @@ These proxy set-ups are standard but were not part of this project's tests.
 
 ## 8. Installation check (end of Phase 6)
 
-This guide was followed from a fresh `git clone` of the repository on a clean Docker host:
-`.env` by `make env`, start, create the Super Administrator, sign in, demo data, make a
-backup, restore it. Results:
+This guide was followed from a fresh `git clone` of the repository on a clean Docker host.
 
-- Steps 2, 4 and 5, the demo data, backup and restore worked as written.
-- Step 3 (`docker compose up -d --build`) could not be run unchanged in the build sandbox,
-  because the sandbox blocks access to Debian's package servers. The backend image was built
-  from an equivalent Ubuntu base with the same packages, and the remaining steps used it with
-  `--no-build`.
-- On a normal internet connection the standard command is expected to work, but that exact
-  build step was not run here.
+| Step | Result |
+|---|---|
+| 2. `make env` | `.env` created; no `CHANGE_ME` left |
+| 3. `docker compose up -d --build` | **Not run unchanged:** the build sandbox blocks Debian's package servers, so `apt-get` failed. The backend image was built from an equivalent Ubuntu 24.04 base with the same packages (Tesseract, fonts, PostgreSQL client), the web image with the standard Dockerfile, then `docker compose up -d --no-build`. All four containers became healthy |
+| 4. Create the Super Administrator | Done (non-interactively, with `SUPERADMIN_PASSWORD`) |
+| 5. Sign in | Home page and sign-in through the web container worked |
+| Demo data | 180 days seeded in 2 min 10 s; the worker's forecast and irregularity scan then succeeded |
+| `make backup`, `make backups`, `docker compose cp …` | Backup listed (1.0 MB) and copied off the container |
+| `make restore NAME=…` | A product added after the backup was gone after the restore; the 10 products and 9,134 sales were back; the app restarted healthy in about 13 seconds |
+
+The one step not verified as written is the image build on a normal internet connection. It
+uses the standard `python:3.12-slim` base and Debian packages, and is expected to work.
