@@ -15,6 +15,7 @@ Mermaid, which GitHub and most Markdown editors render.
 | [testing.md](testing.md) | Assessors, developers | Test strategy, suites and counts, the automated demonstration scenario, AI evaluation, known gaps |
 | [installation.md](installation.md) | Whoever runs the computer | Install, daily operation, backups and restore, updates, troubleshooting |
 | [user-manual.md](user-manual.md) | Shop staff | How to do each job, by role |
+| [demo-script.md](demo-script.md) | Presenter | The live demonstration for the defence: preparation, accounts, 11 steps with timings and what to say, fallbacks, reset |
 
 Regenerate the schema and API reference after changing models or endpoints:
 
