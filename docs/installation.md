@@ -36,7 +36,7 @@ On Linux or macOS:
 make env
 ```
 
-Without `make` (for example on Windows): copy `.env.example` to `.env`, then replace the two
+Without `make` (for example on Windows): copy `.env.example` to `.env`, then replace the three
 `CHANGE_ME` values with long random strings. Python can generate them:
 
 ```bash
@@ -48,8 +48,15 @@ Then open `.env` and set at least:
 - `FRONTEND_URL`, the address staff will type into the browser (for example `http://192.168.1.20:8080`). It is used for password-reset links.
 - `WEB_PORT`, if port 8080 is already taken.
 
-Keep `.env` private. It holds the database password and the token signing key, and it is
+Keep `.env` private. It holds the database passwords and the token signing key, and it is
 never committed to Git.
+
+In production (`ENVIRONMENT=production`) the API **refuses to start** if `JWT_SECRET` is a
+placeholder or shorter than 32 characters, or if the database password is a default or shorter
+than 12 characters. The error names the setting, never its value.
+
+The application connects to PostgreSQL as its own role, `APP_DB_USER`, which is not a
+superuser. `POSTGRES_USER` remains the administrator account, used only for maintenance.
 
 ### Step 3: build and start
 
@@ -168,6 +175,17 @@ docker compose up -d --build
 
 Migrations run automatically. Make a manual backup first (Backups page → **Back up now**).
 
+**Installations created before the security update** connect to the database as the
+PostgreSQL superuser. Move them to the least-privilege role once, after updating:
+1. Add `APP_DB_USER=inventory_app` and `APP_DB_PASSWORD=<a long random value>` to `.env`.
+2. Run the command below. It only changes role settings and table ownership, not data.
+
+```bash
+make db-least-privilege
+```
+
+Until then the API logs a warning at startup.
+
 ## 6. Using it over a network or the internet
 
 On a shop's local network, staff open `http://<server-ip>:8080`. Set `FRONTEND_URL` to that
@@ -178,6 +196,13 @@ proxy in front of the `web` container (Caddy, Traefik or nginx with a certificat
 example from Let's Encrypt), then in `.env` set:
 - `COOKIE_SECURE=true`
 - `FRONTEND_URL=https://your.domain`
+
+The proxy must pass `X-Forwarded-Proto: https`; the `web` container then adds
+`Strict-Transport-Security`. Because the `web` container treats the address it sees as the
+client's, add the proxy's address to nginx's `set_real_ip_from` (with
+`real_ip_header X-Forwarded-For`) so per-IP rate limits apply to real clients rather than
+to the proxy. Ask Super Administrators and managers to turn on two-step sign-in
+(My account).
 
 These proxy set-ups are standard but were not part of this project's tests.
 

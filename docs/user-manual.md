@@ -30,6 +30,12 @@ when you leave.
 **My account** shows your details and the devices you are signed in on (you can sign out any of
 them), and lets you change your password.
 
+**Two-step sign-in (recommended for managers and administrators).** On **My account**, choose
+**Set up** under *Two-step sign-in*, confirm your password, add the key to an authenticator app
+on your phone (Google Authenticator, Microsoft Authenticator, Authy and similar), and type the
+6-digit code it shows. From then on, signing in asks for your password and a fresh code. Lost
+your phone? Ask the Super Admin to reset it.
+
 Numbers are in Kenyan shillings (KES). Shelf prices include VAT.
 
 ---
@@ -226,6 +232,8 @@ You can do everything above, plus:
 - Forgotten password: create a **reset link** from the person's menu and give it to them; it
   works once and expires.
 - **Sign out everywhere** if a phone or till may be in the wrong hands.
+- **Reset two-step sign-in** if someone lost the phone with their authenticator app; they are
+  signed out everywhere and can set it up again.
 
 ### Audit log: Administration → Audit log
 
