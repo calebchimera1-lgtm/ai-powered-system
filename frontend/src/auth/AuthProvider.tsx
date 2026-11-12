@@ -24,7 +24,7 @@ interface AuthContextValue {
   sessionExpired: boolean;
   /** True right after someone deliberately signed out (e.g. a shared till). */
   signedOut: boolean;
-  login: (username: string, password: string) => Promise<CurrentUser>;
+  login: (username: string, password: string, otp?: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
   reloadUser: () => Promise<void>;
   can: (permission: PermissionCode) => boolean;
@@ -75,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (username: string, password: string) => {
-    const data = await authApi.login(username, password);
+  const login = useCallback(async (username: string, password: string, otp?: string) => {
+    const data = await authApi.login(username, password, otp);
     setAccessToken(data.access_token);
     setUser(data.user);
     setSessionExpired(false);

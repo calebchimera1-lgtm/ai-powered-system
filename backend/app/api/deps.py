@@ -9,8 +9,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.exceptions import AuthenticationError, PermissionDenied
+from app.core.exceptions import AuthenticationError, PermissionDenied, RateLimited
 from app.core.permissions import P
+from app.core.rate_limit import SlidingWindowLimiter
 from app.core.security import decode_access_token
 from app.models import User, UserSession
 from app.schemas.common import PageParams
@@ -107,3 +108,26 @@ def page_params(
 
 
 Pagination = Annotated[PageParams, Depends(page_params)]
+
+
+def limit_per_user(limit: int, window_seconds: float, message: str) -> Callable[[User], None]:
+    """Dependency factory: at most `limit` calls per signed-in user per window."""
+    limiter = SlidingWindowLimiter(limit=limit, window_seconds=window_seconds)
+
+    def check(user: CurrentUserAllowPending) -> None:
+        if not limiter.hit(f"user:{user.id}"):
+            raise RateLimited(message)
+
+    return check
+
+
+def limit_per_ip(limit: int, window_seconds: float, message: str) -> Callable[[Request], None]:
+    """Dependency factory: at most `limit` calls per client IP per window."""
+    limiter = SlidingWindowLimiter(limit=limit, window_seconds=window_seconds)
+
+    def check(request: Request) -> None:
+        ip = request.client.host if request.client else "unknown"
+        if not limiter.hit(f"ip:{ip}"):
+            raise RateLimited(message)
+
+    return check

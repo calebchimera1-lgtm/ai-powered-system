@@ -83,6 +83,7 @@ class UserOut(ORMModel):
     is_active: bool
     must_change_password: bool
     is_locked: bool = False
+    mfa_enabled: bool = False
     last_login_at: datetime | None
     created_at: datetime
 

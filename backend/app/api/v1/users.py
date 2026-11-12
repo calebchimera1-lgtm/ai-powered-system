@@ -33,7 +33,9 @@ def _out(user: User) -> UserOut:
 
 def _reset_url(token: str) -> str:
     base = get_settings().frontend_url.rstrip("/")
-    return f"{base}/reset-password?{urlencode({'token': token})}"
+    # The token goes in the #fragment, which browsers never send to the server, so it can't
+    # end up in web-server access logs, proxies or Referer headers.
+    return f"{base}/reset-password#{urlencode({'token': token})}"
 
 
 @router.get("", response_model=Page[UserOut])
@@ -88,6 +90,13 @@ def issue_password_reset(
 def unlock_user(user_id: int, actor: Manager, db: DbSession, ctx: Ctx) -> UserOut:
     user = user_service.get_user(db, user_id)
     return _out(user_service.unlock_user(db, user, actor, ctx))
+
+
+@router.post("/{user_id}/reset-mfa", response_model=UserOut)
+def reset_mfa(user_id: int, actor: Manager, db: DbSession, ctx: Ctx) -> UserOut:
+    """Turn off a user's two-step sign-in (lost phone). They are signed out everywhere."""
+    user = user_service.get_user(db, user_id)
+    return _out(user_service.reset_mfa(db, user, actor, ctx))
 
 
 @router.post("/{user_id}/revoke-sessions", response_model=Message)

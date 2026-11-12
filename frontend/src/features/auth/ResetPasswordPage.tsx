@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useSearchParams } from 'react-router-dom';
 import { z } from 'zod';
@@ -21,7 +21,13 @@ type FormValues = z.infer<typeof schema>;
 /** Landing page for one-time setup / reset links issued by an administrator. */
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
-  const token = params.get('token') ?? '';
+  // New links carry the token in the #fragment (never sent to the server, so never logged);
+  // links issued before that change used ?token=, which still works.
+  const [token] = useState(() => new URLSearchParams(window.location.hash.slice(1)).get('token') ?? params.get('token') ?? '');
+  useEffect(() => {
+    // Take the one-time token out of the address bar and browser history once it's been read.
+    if (token) window.history.replaceState(window.history.state, '', window.location.pathname);
+  }, [token]);
   const [done, setDone] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const {

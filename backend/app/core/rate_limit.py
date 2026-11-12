@@ -1,13 +1,17 @@
 """Small in-process sliding-window rate limiter.
 
-Used for the login endpoint (per client IP). Account-level lockout is stored in the
-database, so it also holds across processes; this limiter is a first line of defence
-per API process and needs no Redis.
+Used per client IP (sign-in, password reset, token refresh) and per user (password
+change, uploads, expensive jobs). Account-level lockout is stored in the database, so it
+also holds across processes; these limiters are a second layer per API process (nginx
+applies a per-IP limit in front of all of them) and need no Redis. With N API workers
+the effective limit is up to N times the configured one.
 """
 
 import threading
 import time
 from collections import defaultdict, deque
+
+_ALL: list["SlidingWindowLimiter"] = []
 
 
 class SlidingWindowLimiter:
@@ -16,6 +20,7 @@ class SlidingWindowLimiter:
         self.window = window_seconds
         self._hits: dict[str, deque[float]] = defaultdict(deque)
         self._lock = threading.Lock()
+        _ALL.append(self)
 
     def hit(self, key: str) -> bool:
         """Record an attempt. Returns False when the key is over its limit."""
@@ -38,3 +43,9 @@ class SlidingWindowLimiter:
     def _evict(self, now: float) -> None:
         for key in [k for k, v in self._hits.items() if not v or now - v[-1] > self.window]:
             del self._hits[key]
+
+
+def reset_all_limiters() -> None:
+    """Forget every recorded hit (used by the test suite between tests)."""
+    for limiter in _ALL:
+        limiter.reset()

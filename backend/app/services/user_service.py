@@ -227,6 +227,21 @@ def unlock_user(db: Session, user: User, actor: User, ctx: RequestContext) -> Us
     return user
 
 
+def reset_mfa(db: Session, user: User, actor: User, ctx: RequestContext) -> User:
+    """Turn off someone's two-step sign-in (e.g. lost phone) and sign them out everywhere."""
+    if user.id == actor.id:
+        raise ValidationFailed("Use My account to change your own two-step sign-in.")
+    user.totp_secret = None
+    user.totp_enabled_at = None
+    user.totp_last_step = None
+    auth_service.revoke_user_sessions(db, user.id, "mfa_reset_by_admin")
+    audit_service.record(
+        db, action="user.mfa_reset", actor=actor, ctx=ctx, entity_type="user", entity_id=user.id
+    )
+    db.commit()
+    return user
+
+
 def force_sign_out(db: Session, user: User, actor: User, ctx: RequestContext) -> int:
     count = auth_service.revoke_user_sessions(db, user.id, "revoked_by_admin")
     audit_service.record(

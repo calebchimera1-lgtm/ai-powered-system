@@ -17,6 +17,7 @@ export interface CurrentUser {
   role: RoleBrief;
   permissions: string[];
   must_change_password: boolean;
+  mfa_enabled?: boolean;
   last_login_at: string | null;
 }
 
@@ -45,8 +46,14 @@ export interface UserOut {
   is_active: boolean;
   must_change_password: boolean;
   is_locked: boolean;
+  mfa_enabled?: boolean;
   last_login_at: string | null;
   created_at: string;
+}
+
+export interface MfaSetup {
+  secret: string;
+  otpauth_uri: string;
 }
 
 export interface UserCreated {

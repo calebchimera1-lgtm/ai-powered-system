@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, File, Query, UploadFile, status
 from fastapi.responses import FileResponse
 
-from app.api.deps import Ctx, DbSession, Pagination, require
+from app.api.deps import Ctx, DbSession, Pagination, limit_per_user, require
 from app.core.config import get_settings
 from app.core.permissions import P
 from app.models import User
@@ -27,6 +27,8 @@ from app.services import invoice_service
 router = APIRouter(prefix="/invoices", tags=["Invoice digitization"])
 
 Uploader = Annotated[User, Depends(require(P.INVOICES_UPLOAD))]
+# OCR is CPU-heavy: cap how many invoices one person can queue.
+ocr_limit = limit_per_user(20, 60, "Too many invoices in a minute. Wait a moment and retry.")
 Approver = Annotated[User, Depends(require(P.INVOICES_APPROVE))]
 Reader = Annotated[User, Depends(require(P.INVOICES_UPLOAD, P.INVOICES_APPROVE, any_of=True))]
 
@@ -38,7 +40,12 @@ def summary(inv) -> InvoiceSummary:  # type: ignore[no-untyped-def]
     return out
 
 
-@router.post("", response_model=InvoiceOut, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "",
+    response_model=InvoiceOut,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(ocr_limit)],
+)
 async def upload(
     user: Uploader,
     db: DbSession,
@@ -124,7 +131,9 @@ def reject(
     return InvoiceOut.model_validate(invoice_service.reject(db, inv, body.note, user, ctx))
 
 
-@router.post("/{invoice_id}/reprocess", response_model=InvoiceOut)
+@router.post(
+    "/{invoice_id}/reprocess", response_model=InvoiceOut, dependencies=[Depends(ocr_limit)]
+)
 def reprocess(invoice_id: int, user: Uploader, db: DbSession, ctx: Ctx) -> InvoiceOut:
     """Read the document again (e.g. after adding the supplier or products)."""
     inv = invoice_service.get(db, invoice_id)

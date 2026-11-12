@@ -17,6 +17,8 @@ import { ChangePasswordForm } from '@/features/auth/ChangePasswordForm';
 import { errorMessage } from '@/lib/errors';
 import { describeUserAgent, formatDateTime } from '@/lib/format';
 
+import { TwoStepCard } from './TwoStepCard';
+
 function Detail({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
@@ -68,6 +70,10 @@ export function AccountPage() {
             }}
           />
         </Card>
+
+        <div className="lg:col-span-2">
+          <TwoStepCard />
+        </div>
 
         <Card className="lg:col-span-2" title="Signed-in devices" description="Sign out any device you don't recognise.">
           {sessions.isLoading && <Spinner label="Loading…" />}

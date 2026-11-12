@@ -73,11 +73,9 @@ def _database() -> Iterator[None]:
 @pytest.fixture(autouse=True)
 def _clean_tables() -> Iterator[None]:
     yield
-    from app.api.v1.auth import login_limiter
-    from app.api.v1.reports import report_limiter
+    from app.core.rate_limit import reset_all_limiters
 
-    login_limiter.reset()
-    report_limiter.reset()
+    reset_all_limiters()
     with engine.begin() as conn:
         tables = [
             r[0]

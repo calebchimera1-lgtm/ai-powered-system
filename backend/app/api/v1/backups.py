@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import FileResponse
 from sqlalchemy import select
 
-from app.api.deps import Ctx, DbSession, require
+from app.api.deps import Ctx, DbSession, limit_per_user, require
 from app.core.permissions import P
 from app.models import BackgroundJob, User
 from app.schemas.analytics import JobQueued
@@ -16,6 +16,7 @@ from app.services import audit_service, backup_service, job_service
 router = APIRouter(prefix="/system/backups", tags=["Backups"])
 
 Admin = Annotated[User, Depends(require(P.BACKUPS_MANAGE))]
+backup_limit = limit_per_user(3, 10 * 60, "Too many backups started. Wait a few minutes.")
 
 
 @router.get("")
@@ -45,7 +46,12 @@ def list_backups(_: Admin, db: DbSession) -> dict[str, Any]:
     }
 
 
-@router.post("", response_model=JobQueued, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "",
+    response_model=JobQueued,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(backup_limit)],
+)
 def back_up_now(user: Admin, db: DbSession, ctx: Ctx) -> JobQueued:
     job = job_service.enqueue(db, "system.backup", {"kind": "manual"})
     audit_service.record(db, action="backup.requested", actor=user, ctx=ctx, entity_type="backup")

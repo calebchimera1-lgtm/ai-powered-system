@@ -9,7 +9,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { Alert } from '@/components/ui/Alert';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Field';
-import { errorMessage } from '@/lib/errors';
+import { errorMessage, parseError } from '@/lib/errors';
 
 import { AuthLayout } from './AuthLayout';
 
@@ -24,6 +24,9 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [formError, setFormError] = useState<string | null>(null);
+  // Set once the password is accepted for an account with two-step sign-in.
+  const [needsCode, setNeedsCode] = useState(false);
+  const [code, setCode] = useState('');
   const from = (location.state as { from?: string } | null)?.from ?? '/';
 
   const {
@@ -37,9 +40,15 @@ export function LoginPage() {
   const onSubmit = async (values: FormValues) => {
     setFormError(null);
     try {
-      const user = await login(values.username, values.password);
+      const user = await login(values.username, values.password, needsCode ? code : undefined);
       navigate(user.must_change_password ? '/change-password' : from, { replace: true });
     } catch (err) {
+      const parsed = parseError(err);
+      if (parsed.code === 'MFA_REQUIRED') {
+        setNeedsCode(true);
+        return;
+      }
+      if (parsed.code === 'MFA_INVALID') setCode('');
       setFormError(errorMessage(err));
     }
   };
@@ -66,6 +75,22 @@ export function LoginPage() {
           error={errors.password?.message}
           {...register('password')}
         />
+        {needsCode && (
+          <div>
+            <Alert tone="info">Two-step sign-in is on for this account. Enter the 6-digit code from your authenticator app.</Alert>
+            <Input
+              className="mt-3"
+              label="Authentication code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]*"
+              maxLength={6}
+              autoFocus
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+            />
+          </div>
+        )}
         <Button type="submit" className="w-full" loading={isSubmitting} icon={<LogIn className="h-4 w-4" />}>
           Sign in
         </Button>

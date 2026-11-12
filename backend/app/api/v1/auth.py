@@ -8,14 +8,17 @@ can never read it. Cookie-authenticated endpoints also require the
 
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Header, Response, status
+from fastapi import APIRouter, Cookie, Depends, Header, Request, Response, status
 
 from app.api.deps import (
     Ctx,
     CurrentSession,
     CurrentUserAllowPending,
     DbSession,
+    limit_per_ip,
+    limit_per_user,
 )
+from app.core import totp
 from app.core.config import get_settings
 from app.core.exceptions import AuthenticationError, NotFoundError, RateLimited
 from app.core.rate_limit import SlidingWindowLimiter
@@ -25,6 +28,10 @@ from app.schemas.auth import (
     ChangePasswordRequest,
     CurrentUser,
     LoginRequest,
+    MfaCodeRequest,
+    MfaDisableRequest,
+    MfaSetupRequest,
+    MfaSetupResponse,
     ResetPasswordRequest,
     RoleBrief,
     SessionOut,
@@ -58,11 +65,20 @@ def to_current_user(user: User) -> CurrentUser:
         role=RoleBrief.model_validate(user.role),
         permissions=sorted(user.permission_codes),
         must_change_password=user.must_change_password,
+        mfa_enabled=user.mfa_enabled,
         last_login_at=user.last_login_at,
     )
 
 
-def _token_response(response: Response, user: User, session: UserSession, refresh: str | None):
+def _cookie_secure(request: Request) -> bool:
+    """Secure cookies whenever the browser is on HTTPS (directly or via a TLS proxy), even if
+    COOKIE_SECURE was left false; COOKIE_SECURE=true forces it on everywhere."""
+    return get_settings().cookie_secure or request.url.scheme == "https"
+
+
+def _token_response(
+    request: Request, response: Response, user: User, session: UserSession, refresh: str | None
+):
     settings = get_settings()
     access, expires_in = create_access_token(
         user_id=user.id, session_id=session.id, role=user.role.name
@@ -73,7 +89,7 @@ def _token_response(response: Response, user: User, session: UserSession, refres
             refresh,
             max_age=settings.refresh_token_days * 86400,
             httponly=True,
-            secure=settings.cookie_secure,
+            secure=_cookie_secure(request),
             samesite="strict",
             path=COOKIE_PATH,
         )
@@ -81,28 +97,44 @@ def _token_response(response: Response, user: User, session: UserSession, refres
     return TokenResponse(access_token=access, expires_in=expires_in, user=to_current_user(user))
 
 
-def _clear_cookie(response: Response) -> None:
-    settings = get_settings()
+def _clear_cookie(request: Request, response: Response) -> None:
     response.delete_cookie(
         REFRESH_COOKIE,
         path=COOKIE_PATH,
-        secure=settings.cookie_secure,
+        secure=_cookie_secure(request),
         httponly=True,
         samesite="strict",
     )
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(body: LoginRequest, response: Response, db: DbSession, ctx: Ctx) -> TokenResponse:
+def login(
+    body: LoginRequest, request: Request, response: Response, db: DbSession, ctx: Ctx
+) -> TokenResponse:
     """Sign in with username (or email) and password."""
     if not login_limiter.hit(ctx.ip_address or "unknown"):
         raise RateLimited("Too many sign-in attempts from this device. Wait a minute and retry.")
-    result = auth_service.authenticate(db, body.username, body.password, ctx)
-    return _token_response(response, result.user, result.session, result.refresh_token)
+    result = auth_service.authenticate(db, body.username, body.password, ctx, otp=body.otp)
+    return _token_response(request, response, result.user, result.session, result.refresh_token)
 
 
-@router.post("/refresh", response_model=TokenResponse, dependencies=[Depends(require_xhr)])
+# Refresh is called by the app every ~15 minutes per tab; this only stops floods.
+refresh_limit = limit_per_ip(60, 60, "Too many requests. Wait a minute and retry.")
+# Stops someone holding a stolen access token from guessing the current password.
+change_password_limit = limit_per_user(
+    5, 15 * 60, "Too many password change attempts. Wait 15 minutes and retry."
+)
+# Same for the two-step setup/disable endpoints (they check the password and codes).
+mfa_limit = limit_per_user(10, 15 * 60, "Too many attempts. Wait 15 minutes and retry.")
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    dependencies=[Depends(require_xhr), Depends(refresh_limit)],
+)
 def refresh(
+    request: Request,
     response: Response,
     db: DbSession,
     ctx: Ctx,
@@ -112,15 +144,17 @@ def refresh(
     try:
         result = auth_service.refresh(db, refresh_token, ctx)
     except AuthenticationError:
-        _clear_cookie(response)
+        _clear_cookie(request, response)
         raise
-    return _token_response(response, result.user, result.session, result.refresh_token)
+    return _token_response(request, response, result.user, result.session, result.refresh_token)
 
 
 @router.post("/logout", response_model=Message, dependencies=[Depends(require_xhr)])
-def logout(response: Response, session: CurrentSession, db: DbSession, ctx: Ctx) -> Message:
+def logout(
+    request: Request, response: Response, session: CurrentSession, db: DbSession, ctx: Ctx
+) -> Message:
     auth_service.logout(db, session, ctx)
-    _clear_cookie(response)
+    _clear_cookie(request, response)
     return Message(message="Signed out")
 
 
@@ -129,7 +163,9 @@ def me(user: CurrentUserAllowPending) -> CurrentUser:
     return to_current_user(user)
 
 
-@router.post("/change-password", response_model=Message)
+@router.post(
+    "/change-password", response_model=Message, dependencies=[Depends(change_password_limit)]
+)
 def change_password(
     body: ChangePasswordRequest,
     session: CurrentSession,
@@ -181,3 +217,33 @@ def revoke_my_session(session_id: int, session: CurrentSession, db: DbSession, c
     )
     db.commit()
     return Message(message="Device signed out")
+
+
+# --- Two-step sign-in ---------------------------------------------------------------------
+
+
+@router.post("/mfa/setup", response_model=MfaSetupResponse, dependencies=[Depends(mfa_limit)])
+def mfa_setup(
+    body: MfaSetupRequest, session: CurrentSession, db: DbSession, ctx: Ctx
+) -> MfaSetupResponse:
+    """Start turning on two-step sign-in: returns a key to add to an authenticator app."""
+    user = session.user
+    secret = auth_service.start_mfa_setup(db, user, body.password, ctx)
+    uri = totp.provisioning_uri(secret, user.username, get_settings().app_name)
+    return MfaSetupResponse(secret=secret, otpauth_uri=uri)
+
+
+@router.post("/mfa/enable", response_model=Message, dependencies=[Depends(mfa_limit)])
+def mfa_enable(body: MfaCodeRequest, session: CurrentSession, db: DbSession, ctx: Ctx) -> Message:
+    """Finish setup with a code from the app. Your other devices are signed out."""
+    auth_service.enable_mfa(db, session.user, session, body.code, ctx)
+    return Message(message="Two-step sign-in is on")
+
+
+@router.post("/mfa/disable", response_model=Message, dependencies=[Depends(mfa_limit)])
+def mfa_disable(
+    body: MfaDisableRequest, session: CurrentSession, db: DbSession, ctx: Ctx
+) -> Message:
+    """Turn two-step sign-in off (needs your password and a current code)."""
+    auth_service.disable_mfa(db, session.user, body.password, body.code, ctx)
+    return Message(message="Two-step sign-in is off")

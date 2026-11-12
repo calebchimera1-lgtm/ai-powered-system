@@ -26,7 +26,7 @@ def new_user(**overrides):
 
 
 def token_from(url: str) -> str:
-    return parse_qs(urlparse(url).query)["token"][0]
+    return parse_qs(urlparse(url).fragment)["token"][0]
 
 
 # --- RBAC -----------------------------------------------------------------------
@@ -101,7 +101,8 @@ def test_create_without_password_returns_setup_link_that_works_once(
     r = client.post(USERS, headers=h, json=body)
     assert r.status_code == 201
     url = r.json()["setup_url"]
-    assert url.startswith("http://frontend.test/reset-password?token=")
+    assert url.startswith("http://frontend.test/reset-password#token=")
+    assert "?" not in url  # never in the query string, which web servers log
     token = token_from(url)
 
     r = client.post(

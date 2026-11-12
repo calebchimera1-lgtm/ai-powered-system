@@ -13,6 +13,7 @@ and the 5 most recent manual ones. Restoring is deliberately a command-line step
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -21,7 +22,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlsplit
 
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -190,21 +191,58 @@ def restore(name: str, database_url: str | None = None, *, files: bool = True) -
         if _sha256(folder / fname) != info["sha256"]:
             raise BackupError(f"{fname} does not match its checksum: the backup is damaged")
     args, env = libpq(database_url or settings.database_url)
-    _run(
-        [
-            "pg_restore",
-            *args,
-            "--clean",
-            "--if-exists",
-            "--no-owner",
-            "--no-privileges",
-            "--single-transaction",
-            "--dbname",
-            env["PGDATABASE"],
-            str(folder / "database.dump"),
-        ],
-        env,
+    # Skip extensions: the migrations create them, and the app's least-privilege database
+    # role is not allowed to drop and re-create an extension the administrator installed.
+    listing = subprocess.run(  # noqa: S603
+        ["pg_restore", "--list", str(folder / "database.dump")],  # noqa: S607
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    ).stdout
+    # ...but make sure each one exists (an empty target database has none). CREATE EXTENSION
+    # IF NOT EXISTS is a no-op when it is there, and allowed for the database owner on
+    # trusted extensions such as pg_trgm.
+    extensions = sorted(
+        {
+            line.split(" EXTENSION - ", 1)[1].split()[0]
+            for line in listing.splitlines()
+            if " EXTENSION - " in line and not line.lstrip().startswith(";")
+        }
     )
+    if any(not re.fullmatch(r"[a-z0-9_]+", ext) for ext in extensions):
+        raise BackupError("The backup lists an unexpected extension name; refusing to restore")
+    if extensions:
+        engine = create_engine(database_url or settings.database_url)
+        try:
+            with engine.begin() as conn:
+                for ext in extensions:
+                    conn.execute(text(f'CREATE EXTENSION IF NOT EXISTS "{ext}"'))
+        finally:
+            engine.dispose()
+    toc = folder / ".restore-list"
+    toc.write_text("\n".join(x for x in listing.splitlines() if " EXTENSION " not in x) + "\n")
+    try:
+        _run(
+            [
+                "pg_restore",
+                *args,
+                "--clean",
+                "--if-exists",
+                "--no-owner",
+                "--no-privileges",
+                "--single-transaction",
+                "--use-list",
+                str(toc),
+                "--dbname",
+                env["PGDATABASE"],
+                str(folder / "database.dump"),
+            ],
+            env,
+        )
+    finally:
+        toc.unlink(missing_ok=True)
     if files:
         storage = Path(settings.storage_dir).resolve()
         with tarfile.open(folder / "files.tar.gz", "r:gz") as tar:

@@ -48,7 +48,7 @@ describe('LoginPage', () => {
     await userEvent.type(screen.getByLabelText(/^password/i), 'Secret-123');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
     expect(await screen.findByText('Home screen')).toBeInTheDocument();
-    expect(authApi.login).toHaveBeenCalledWith('amina', 'Secret-123');
+    expect(authApi.login).toHaveBeenCalledWith('amina', 'Secret-123', undefined);
     expect(client.getAccessToken()).toBe('tok');
   });
 
@@ -83,5 +83,31 @@ describe('LoginPage', () => {
     await userEvent.type(screen.getByLabelText(/^password/i), 'wrong-one-1');
     await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Invalid username or password'));
+  });
+
+  it('asks for the authenticator code when two-step sign-in is on', async () => {
+    const { AxiosError, AxiosHeaders } = await import('axios');
+    const config = { headers: new AxiosHeaders() };
+    vi.mocked(authApi.login)
+      .mockRejectedValueOnce(
+        new AxiosError('401', 'ERR', config, null, {
+          status: 401,
+          statusText: '',
+          headers: {},
+          config,
+          data: { error: { code: 'MFA_REQUIRED', message: 'Enter the 6-digit code from your authenticator app.' } },
+        }),
+      )
+      .mockResolvedValueOnce({ access_token: 'tok', token_type: 'bearer', expires_in: 900, user: makeUser('store_manager') });
+    renderLogin();
+    await userEvent.type(await screen.findByLabelText(/username or email/i), 'brian');
+    await userEvent.type(screen.getByLabelText(/^password/i), 'Secret-123');
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    const codeField = await screen.findByLabelText(/authentication code/i);
+    await userEvent.type(codeField, '12a3456');
+    expect(codeField).toHaveValue('123456'); // digits only
+    await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    expect(await screen.findByText('Home screen')).toBeInTheDocument();
+    expect(authApi.login).toHaveBeenLastCalledWith('brian', 'Secret-123', '123456');
   });
 });

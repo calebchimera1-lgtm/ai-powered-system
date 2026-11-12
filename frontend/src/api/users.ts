@@ -50,6 +50,7 @@ export const usersApi = {
   issueReset: (id: number) =>
     api.post<PasswordResetIssued>(`/users/${id}/reset-password`).then((r) => r.data),
   unlock: (id: number) => api.post<UserOut>(`/users/${id}/unlock`).then((r) => r.data),
+  resetMfa: (id: number) => api.post<UserOut>(`/users/${id}/reset-mfa`).then((r) => r.data),
   revokeSessions: (id: number) =>
     api.post<Message>(`/users/${id}/revoke-sessions`).then((r) => r.data),
   roles: () => api.get<RoleOut[]>('/roles').then((r) => r.data),

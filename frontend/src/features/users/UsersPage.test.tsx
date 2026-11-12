@@ -83,7 +83,7 @@ describe('UsersPage', () => {
   it('creates a user and shows the one-time setup link', async () => {
     vi.mocked(usersApi.create).mockResolvedValue({
       user: { ...sample, id: 3, full_name: 'Grace Njeri', username: 'gnjeri' },
-      setup_url: 'http://localhost:8080/reset-password?token=abc',
+      setup_url: 'http://localhost:8080/reset-password#token=abc',
       setup_expires_at: '2026-11-05T12:00:00Z',
     });
     setup('super_admin');
@@ -96,6 +96,6 @@ describe('UsersPage', () => {
     expect(usersApi.create).toHaveBeenCalledWith(
       expect.objectContaining({ username: 'gnjeri', role: 'cashier', password: null }),
     );
-    expect(await screen.findByDisplayValue('http://localhost:8080/reset-password?token=abc')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('http://localhost:8080/reset-password#token=abc')).toBeInTheDocument();
   });
 });

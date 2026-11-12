@@ -11,6 +11,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class Settings(BaseSettings):
@@ -37,7 +38,10 @@ class Settings(BaseSettings):
     access_token_minutes: int = 15
     refresh_token_days: int = 7
     refresh_reuse_grace_seconds: int = 10
-    cookie_secure: bool = False  # set true when served over HTTPS
+    # Always true when a request arrives over HTTPS; set true to force it everywhere.
+    cookie_secure: bool = False
+    # Interactive API docs (/api/docs, /api/redoc, /api/openapi.json). Off in production.
+    expose_api_docs: bool | None = None
     password_min_length: int = 8
     login_max_failures: int = 5
     lockout_minutes: int = 15
@@ -84,10 +88,41 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.environment == "production"
 
+    @property
+    def api_docs_enabled(self) -> bool:
+        return self.expose_api_docs if self.expose_api_docs is not None else not self.is_production
+
+
+# Values that mean "nobody configured this": the code default and the .env.example placeholders.
+_PLACEHOLDERS = ("change-me", "change_me", "changeme")
+_DEFAULT_DB_PASSWORDS = {"inventory", "postgres", "password"}
+
+
+def production_config_problems(settings: Settings) -> list[str]:
+    """Reasons the configuration is unsafe for production (never includes secret values)."""
+    problems = []
+    secret = settings.jwt_secret
+    if any(p in secret.lower() for p in _PLACEHOLDERS) or len(secret) < 32:
+        problems.append(
+            "JWT_SECRET must be a random value of at least 32 characters "
+            '(python3 -c "import secrets; print(secrets.token_urlsafe(48))")'
+        )
+    db_password = make_url(settings.database_url).password or ""
+    if (
+        any(p in db_password.lower() for p in _PLACEHOLDERS)
+        or db_password.lower() in _DEFAULT_DB_PASSWORDS
+        or len(db_password) < 12
+    ):
+        problems.append("POSTGRES_PASSWORD must be changed to a random value of 12+ characters")
+    return problems
+
 
 @lru_cache
 def get_settings() -> Settings:
     settings = Settings()
-    if settings.is_production and settings.jwt_secret == "change-me-in-env":  # noqa: S105
-        raise RuntimeError("JWT_SECRET must be set to a strong random value in production")
+    if settings.is_production:
+        problems = production_config_problems(settings)
+        if problems:
+            # Fail closed: refuse to start rather than run with guessable secrets.
+            raise RuntimeError("Unsafe production configuration: " + "; ".join(problems))
     return settings

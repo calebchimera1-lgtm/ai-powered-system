@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, LogOut, Pencil, Search, Unlock, UserCheck, UserPlus, UserX } from 'lucide-react';
+import { KeyRound, LogOut, Pencil, Search, ShieldOff, Unlock, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { useState } from 'react';
 
 import type { UserOut } from '@/api/types';
@@ -25,7 +25,7 @@ import { UserFormModal, type CreateValues, type EditValues } from './UserFormMod
 const PAGE_SIZE = 20;
 
 type Confirm =
-  | { kind: 'deactivate' | 'activate' | 'signout'; user: UserOut }
+  | { kind: 'deactivate' | 'activate' | 'signout' | 'mfa'; user: UserOut }
   | null;
 
 export function UsersPage() {
@@ -64,6 +64,10 @@ export function UsersPage() {
   const actionMutation = useMutation({
     mutationFn: async (c: NonNullable<Confirm>) => {
       if (c.kind === 'signout') return (await usersApi.revokeSessions(c.user.id)).message;
+      if (c.kind === 'mfa') {
+        await usersApi.resetMfa(c.user.id);
+        return `Two-step sign-in turned off for ${c.user.full_name}`;
+      }
       await usersApi.update(c.user.id, { is_active: c.kind === 'activate' });
       return c.kind === 'activate' ? `${c.user.full_name} can sign in again` : `${c.user.full_name} was deactivated`;
     },
@@ -140,7 +144,10 @@ export function UsersPage() {
             {u.full_name}
             {u.id === me?.id && <span className="ml-1.5 text-xs font-normal text-gray-500">(you)</span>}
           </p>
-          <p className="text-xs text-gray-500">@{u.username}</p>
+          <p className="text-xs text-gray-500">
+            @{u.username}
+            {u.mfa_enabled && <span className="ml-1.5 rounded bg-brand-50 px-1.5 py-0.5 text-[11px] font-medium text-brand-700">2-step on</span>}
+          </p>
         </div>
       ),
     },
@@ -185,6 +192,7 @@ export function UsersPage() {
               { label: 'Edit details', icon: <Pencil className="h-4 w-4" />, onClick: () => { setEditing(u); setFormOpen(true); } },
               { label: 'Create reset link', icon: <KeyRound className="h-4 w-4" />, onClick: () => resetLink(u), hidden: !u.is_active },
               { label: 'Unlock account', icon: <Unlock className="h-4 w-4" />, onClick: () => unlock(u), hidden: !u.is_locked },
+              { label: 'Reset two-step sign-in', icon: <ShieldOff className="h-4 w-4" />, onClick: () => setConfirm({ kind: 'mfa', user: u }), hidden: !u.mfa_enabled || u.id === me?.id },
               { label: 'Sign out everywhere', icon: <LogOut className="h-4 w-4" />, onClick: () => setConfirm({ kind: 'signout', user: u }), hidden: u.id === me?.id },
               { label: 'Reactivate', icon: <UserCheck className="h-4 w-4" />, onClick: () => setConfirm({ kind: 'activate', user: u }), hidden: u.is_active },
               { label: 'Deactivate', icon: <UserX className="h-4 w-4" />, danger: true, onClick: () => setConfirm({ kind: 'deactivate', user: u }), hidden: !u.is_active || u.id === me?.id },
@@ -207,6 +215,12 @@ export function UsersPage() {
       body: `${confirm.user.full_name} will be able to sign in again with their existing password.`,
       label: 'Reactivate',
       tone: 'primary' as const,
+    },
+    mfa: {
+      title: 'Reset two-step sign-in?',
+      body: `Use this if ${confirm.user.full_name} lost their phone. Two-step sign-in is turned off, they are signed out everywhere, and they can sign in with their password and set it up again.`,
+      label: 'Reset two-step sign-in',
+      tone: 'danger' as const,
     },
     signout: {
       title: 'Sign out on every device?',

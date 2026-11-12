@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
+from app.core import totp
 from app.core.config import get_settings
 from app.core.exceptions import AuthenticationError, ValidationFailed
 from app.core.security import (
@@ -41,8 +42,13 @@ class LoginResult:
 # --- Login --------------------------------------------------------------------
 
 
-def authenticate(db: Session, username: str, password: str, ctx: RequestContext) -> LoginResult:
-    settings = get_settings()
+def authenticate(
+    db: Session,
+    username: str,
+    password: str,
+    ctx: RequestContext,
+    otp: str | None = None,
+) -> LoginResult:
     ident = username.strip().lower()
     user = db.scalar(
         select(User).where(or_(func.lower(User.username) == ident, func.lower(User.email) == ident))
@@ -64,26 +70,27 @@ def authenticate(db: Session, username: str, password: str, ctx: RequestContext)
         )
 
     if not verify_password(password, user.password_hash):
-        user.failed_login_count += 1
-        reason = "wrong password"
-        if user.failed_login_count >= settings.login_max_failures:
-            user.locked_until = now + timedelta(minutes=settings.lockout_minutes)
-            user.failed_login_count = 0
-            reason = "wrong password; account locked"
-            audit_service.record(
-                db,
-                action="auth.account_locked",
-                actor=user,
-                ctx=ctx,
-                entity_type="user",
-                entity_id=user.id,
-            )
-        _log_failure(db, user, ctx, reason)
+        _count_failure(db, user, ctx, "wrong password")
         raise AuthenticationError(INVALID_CREDENTIALS)
 
     if not user.is_active:
         _log_failure(db, user, ctx, "account deactivated")
         raise AuthenticationError("This account has been deactivated.", code="ACCOUNT_DISABLED")
+
+    if user.mfa_enabled:
+        if not otp:
+            # The password was right; ask for the second step. Not counted as a failure.
+            raise AuthenticationError(
+                "Enter the 6-digit code from your authenticator app.", code="MFA_REQUIRED"
+            )
+        step = totp.verify(user.totp_secret or "", otp, last_used_step=user.totp_last_step)
+        if step is None:
+            # Wrong or reused codes count towards the same lockout as wrong passwords.
+            _count_failure(db, user, ctx, "wrong two-step code")
+            raise AuthenticationError(
+                "That code is not valid. Use the newest code from your app.", code="MFA_INVALID"
+            )
+        user.totp_last_step = step
 
     user.failed_login_count = 0
     user.locked_until = None
@@ -97,6 +104,25 @@ def authenticate(db: Session, username: str, password: str, ctx: RequestContext)
     )
     db.commit()
     return LoginResult(user=user, session=session, refresh_token=token)
+
+
+def _count_failure(db: Session, user: User, ctx: RequestContext, reason: str) -> None:
+    """Record a failed attempt (wrong password or code); lock the account after too many."""
+    settings = get_settings()
+    user.failed_login_count += 1
+    if user.failed_login_count >= settings.login_max_failures:
+        user.locked_until = utcnow() + timedelta(minutes=settings.lockout_minutes)
+        user.failed_login_count = 0
+        reason = f"{reason}; account locked"
+        audit_service.record(
+            db,
+            action="auth.account_locked",
+            actor=user,
+            ctx=ctx,
+            entity_type="user",
+            entity_id=user.id,
+        )
+    _log_failure(db, user, ctx, reason)
 
 
 def _log_failure(db: Session, user: User | None, ctx: RequestContext, reason: str) -> None:
@@ -361,3 +387,85 @@ def reset_password_with_token(
     )
     db.commit()
     return user
+
+
+# --- Two-step sign-in (TOTP) -------------------------------------------------------------
+
+
+def _require_password(user: User, password: str) -> None:
+    if not verify_password(password, user.password_hash):
+        raise ValidationFailed(
+            "Your current password is not correct.",
+            details=[{"field": "password", "message": "incorrect"}],
+            code="WRONG_PASSWORD",
+        )
+
+
+def start_mfa_setup(db: Session, user: User, password: str, ctx: RequestContext) -> str:
+    """Create a new secret for the user to add to their app. Not active until confirmed."""
+    _require_password(user, password)
+    if user.mfa_enabled:
+        raise ValidationFailed("Two-step sign-in is already on.", code="MFA_ALREADY_ENABLED")
+    user.totp_secret = totp.generate_secret()
+    user.totp_enabled_at = None
+    user.totp_last_step = None
+    audit_service.record(
+        db,
+        action="auth.mfa_setup_started",
+        actor=user,
+        ctx=ctx,
+        entity_type="user",
+        entity_id=user.id,
+    )
+    db.commit()
+    return user.totp_secret
+
+
+def enable_mfa(
+    db: Session, user: User, session: UserSession, code: str, ctx: RequestContext
+) -> int:
+    """Confirm setup with a code from the app. Signs out the user's other devices."""
+    if user.mfa_enabled:
+        raise ValidationFailed("Two-step sign-in is already on.", code="MFA_ALREADY_ENABLED")
+    if not user.totp_secret:
+        raise ValidationFailed("Start the setup first.", code="MFA_NOT_STARTED")
+    step = totp.verify(user.totp_secret, code, last_used_step=None)
+    if step is None:
+        raise ValidationFailed(
+            "That code is not valid. Check the time on your phone and try the newest code.",
+            details=[{"field": "code", "message": "invalid"}],
+            code="MFA_INVALID",
+        )
+    user.totp_enabled_at = utcnow()
+    user.totp_last_step = step
+    revoked = revoke_user_sessions(db, user.id, "mfa_enabled", except_session_id=session.id)
+    audit_service.record(
+        db, action="auth.mfa_enabled", actor=user, ctx=ctx, entity_type="user", entity_id=user.id
+    )
+    db.commit()
+    return revoked
+
+
+def disable_mfa(db: Session, user: User, password: str, code: str, ctx: RequestContext) -> None:
+    """Turning it off needs both the password and a current code."""
+    _require_password(user, password)
+    if not user.mfa_enabled:
+        raise ValidationFailed("Two-step sign-in is not on.", code="MFA_NOT_ENABLED")
+    step = totp.verify(user.totp_secret or "", code, last_used_step=user.totp_last_step)
+    if step is None:
+        raise ValidationFailed(
+            "That code is not valid.",
+            details=[{"field": "code", "message": "invalid"}],
+            code="MFA_INVALID",
+        )
+    _clear_mfa(user)
+    audit_service.record(
+        db, action="auth.mfa_disabled", actor=user, ctx=ctx, entity_type="user", entity_id=user.id
+    )
+    db.commit()
+
+
+def _clear_mfa(user: User) -> None:
+    user.totp_secret = None
+    user.totp_enabled_at = None
+    user.totp_last_step = None

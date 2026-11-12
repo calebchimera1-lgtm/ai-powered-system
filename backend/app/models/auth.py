@@ -76,6 +76,11 @@ class User(IdMixin, TimestampMixin, Base):
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Two-step sign-in (TOTP). The secret is set when setup starts and only takes effect
+    # once confirmed with a valid code (totp_enabled_at). Never returned by the API.
+    totp_secret: Mapped[str | None] = mapped_column(String(64))
+    totp_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    totp_last_step: Mapped[int | None] = mapped_column(BigInteger)
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
 
     role: Mapped[Role] = relationship(lazy="joined")
@@ -83,6 +88,10 @@ class User(IdMixin, TimestampMixin, Base):
     @property
     def permission_codes(self) -> set[str]:
         return self.role.permission_codes
+
+    @property
+    def mfa_enabled(self) -> bool:
+        return self.totp_enabled_at is not None and self.totp_secret is not None
 
 
 class UserSession(IdMixin, Base):

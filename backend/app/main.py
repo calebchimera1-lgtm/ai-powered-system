@@ -20,8 +20,22 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
     with SessionLocal() as db:
         sync_roles_and_permissions(db)
+        superuser = db.execute(
+            text("SELECT rolsuper FROM pg_roles WHERE rolname = current_user")
+        ).scalar()
+    if superuser and settings.is_production:
+        logger.warning(
+            "The API is connected to PostgreSQL as a SUPERUSER. Give it its own role: set "
+            "APP_DB_USER and APP_DB_PASSWORD in .env and run `make db-least-privilege`."
+        )
+    if settings.is_production and not settings.cookie_secure:
+        logger.info(
+            "COOKIE_SECURE is false: sign-in cookies are Secure only on HTTPS requests. "
+            "Serve the site over HTTPS (and set COOKIE_SECURE=true) outside a closed shop LAN."
+        )
     yield
 
 
@@ -37,9 +51,10 @@ def create_app() -> FastAPI:
             "Digitization System. Amounts are in Kenyan Shillings (KES)."
         ),
         lifespan=lifespan,
-        docs_url="/api/docs",
-        redoc_url="/api/redoc",
-        openapi_url="/api/openapi.json",
+        # The schema lists every endpoint and field: not published in production.
+        docs_url="/api/docs" if settings.api_docs_enabled else None,
+        redoc_url="/api/redoc" if settings.api_docs_enabled else None,
+        openapi_url="/api/openapi.json" if settings.api_docs_enabled else None,
     )
 
     if settings.cors_origins:

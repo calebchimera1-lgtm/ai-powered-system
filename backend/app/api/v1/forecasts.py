@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy import select
 
-from app.api.deps import DbSession, require
+from app.api.deps import DbSession, limit_per_user, require
 from app.core.permissions import P
 from app.models import BackgroundJob, ProductForecast, Supplier, SupplierProduct, User
 from app.schemas.analytics import (
@@ -63,7 +63,12 @@ def overview(_: Reader, db: DbSession) -> ForecastOverview:
     )
 
 
-@router.post("/run", response_model=JobQueued, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/run",
+    response_model=JobQueued,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(limit_per_user(5, 60, "Too many forecast runs. Wait a minute."))],
+)
 def run_now(user: Planner, db: DbSession) -> JobQueued:
     """Re-train and re-forecast in the background (takes a few seconds to a minute)."""
     if _running(db):

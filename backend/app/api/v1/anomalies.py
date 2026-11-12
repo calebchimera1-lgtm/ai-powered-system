@@ -10,7 +10,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Query, status
 
 from app.ai.anomaly.detector import KIND_LABELS
-from app.api.deps import Ctx, DbSession, Pagination, require
+from app.api.deps import Ctx, DbSession, Pagination, limit_per_user, require
 from app.core.permissions import P
 from app.models import AnomalyAlert, BackgroundJob, User
 from app.schemas.analytics import AnomalyAlertOut, AnomalyReview, AnomalyStats, JobQueued
@@ -65,7 +65,12 @@ def alert_stats(user: Reader, db: DbSession) -> AnomalyStats:
     return AnomalyStats.model_validate(anomaly_service.stats(db, user))
 
 
-@router.post("/scan", response_model=JobQueued, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/scan",
+    response_model=JobQueued,
+    status_code=status.HTTP_202_ACCEPTED,
+    dependencies=[Depends(limit_per_user(5, 60, "Too many scans. Wait a minute."))],
+)
 def scan_now(_: Reviewer, db: DbSession) -> JobQueued:
     from sqlalchemy import select
 
