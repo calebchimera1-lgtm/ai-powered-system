@@ -15,7 +15,7 @@ function initials(name: string): string {
     .join('');
 }
 
-export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
+export function Topbar({ onOpenMenu, menuOpen = false }: { onOpenMenu: () => void; menuOpen?: boolean }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -48,8 +48,10 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
       <button
         type="button"
         onClick={onOpenMenu}
-        className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"
+        className="rounded-lg p-2.5 text-gray-600 hover:bg-gray-100 lg:hidden"
         aria-label="Open menu"
+        aria-expanded={menuOpen}
+        aria-controls="mobile-menu"
       >
         <Menu className="h-5 w-5" />
       </button>

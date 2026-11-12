@@ -41,7 +41,7 @@ export function RevenueChart({ data }: { data: TrendDay[] }) {
           <li className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: SERIES.revenue }} />Revenue (excl. VAT)</li>
           <li className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded" style={{ background: SERIES.profit }} />Gross profit</li>
         </ul>
-        <button type="button" onClick={() => setAsTable((v) => !v)} className="text-xs font-medium text-brand-700 hover:underline">
+        <button type="button" onClick={() => setAsTable((v) => !v)} className="py-2 text-xs font-medium text-brand-700 hover:underline">
           {asTable ? 'Show chart' : 'Show as table'}
         </button>
       </div>

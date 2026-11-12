@@ -28,6 +28,7 @@ export function HomePage() {
   return (
     <>
       <PageHeader
+        documentTitle="Home"
         title={`${greeting()}, ${user.full_name.split(' ')[0]}`}
         description={`Signed in as ${user.role.display_name} since ${formatDateTime(user.last_login_at)}.`}
       />

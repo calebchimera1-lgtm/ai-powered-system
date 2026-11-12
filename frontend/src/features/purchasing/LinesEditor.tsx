@@ -49,7 +49,7 @@ export function LinesEditor({
         }}
       />
       {lines.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <div className="relative overflow-x-auto rounded-lg border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
               <tr>

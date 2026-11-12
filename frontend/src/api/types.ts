@@ -137,6 +137,8 @@ export interface Product {
   default_supplier: { id: number; name: string } | null;
   unit_of_measure: Unit;
   image_url: string | null;
+  /** 160 px WebP for lists and small previews. */
+  thumbnail_url?: string | null;
   selling_price: Decimal;
   vat_rate: Decimal;
   quantity_on_hand: Decimal;

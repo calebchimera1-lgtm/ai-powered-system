@@ -15,6 +15,7 @@ import { DataTable, Pagination, type Column } from '@/components/ui/DataTable';
 import { useToast } from '@/components/ui/Toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { errorMessage } from '@/lib/errors';
+import { PhoneLink } from '@/components/ui/ContactLink';
 
 import { SupplierFormModal } from './SupplierFormModal';
 
@@ -45,7 +46,7 @@ export function SuppliersPage() {
     { key: 'contact', header: 'Contact', render: (s) => (
       <div className="text-xs">
         <p className="text-gray-800">{s.contact_person ?? '—'}</p>
-        {s.phone && <a href={`tel:${s.phone.replace(/\s/g, '')}`} className="text-brand-700 hover:underline">{s.phone}</a>}
+        {s.phone && <PhoneLink phone={s.phone} />}
       </div>
     ) },
     { key: 'products', header: 'Products', className: 'text-right', hideOnMobile: true, render: (s) => <span className="tabular-nums">{s.product_count}</span> },

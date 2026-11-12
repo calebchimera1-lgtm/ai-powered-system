@@ -1,14 +1,16 @@
 import clsx from 'clsx';
 import { Boxes, X } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import { useAuth } from '@/auth/AuthProvider';
 
 import { visibleSections } from './navigation';
 
-function Brand() {
+/** The logo; it links to the home page. */
+function Brand({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="flex items-center gap-2.5">
+    <Link to="/" onClick={onNavigate} aria-label="Smart Inventory, home" className="-m-1 flex items-center gap-2.5 rounded-lg p-1">
       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
         <Boxes className="h-5 w-5" aria-hidden />
       </div>
@@ -16,7 +18,7 @@ function Brand() {
         <p className="text-sm font-semibold text-gray-900">Smart Inventory</p>
         <p className="text-xs text-gray-500">Supermarket suite</p>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -58,6 +60,50 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose: () => void }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const location = useLocation();
+
+  // Close the drawer when the page changes (back button, a link inside a page, etc.).
+  useEffect(() => {
+    onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // While open: Escape closes it, focus moves into it and stays there, the page behind
+  // does not scroll, and focus returns to the menu button when it closes.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const opener = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const drawer = closeRef.current?.closest('aside');
+      const focusable = drawer?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])');
+      if (!focusable || focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previousOverflow;
+      opener?.focus?.();
+    };
+  }, [mobileOpen, onClose]);
+
   return (
     <>
       {/* Desktop */}
@@ -70,15 +116,16 @@ export function Sidebar({ mobileOpen, onClose }: { mobileOpen: boolean; onClose:
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+        <div id="mobile-menu" className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <div className="absolute inset-0 bg-gray-900/50" onClick={onClose} aria-hidden />
           <aside className="relative flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-xl">
             <div className="flex h-16 items-center justify-between border-b border-gray-100 px-4">
-              <Brand />
+              <Brand onNavigate={onClose} />
               <button
+                ref={closeRef}
                 type="button"
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100"
+                className="rounded-lg p-2.5 text-gray-500 hover:bg-gray-100"
                 aria-label="Close menu"
               >
                 <X className="h-5 w-5" />

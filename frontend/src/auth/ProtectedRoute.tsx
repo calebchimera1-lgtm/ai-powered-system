@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import { FullPageSpinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 import { useAuth } from './AuthProvider';
 import type { PermissionCode } from './permissions';
@@ -34,15 +35,21 @@ export function RequirePermission({
   children: ReactNode;
 }) {
   const { canAny } = useAuth();
-  if (!canAny(...anyOf)) {
-    return (
+  if (!canAny(...anyOf)) return <NoAccess />;
+  return <>{children}</>;
+}
+
+function NoAccess() {
+  usePageTitle('No access');
+  return (
+    <>
+      <h1 className="sr-only">No access</h1>
       <EmptyState
         title="You don't have access to this page"
         description="Ask a Super Administrator if you need access."
       />
-    );
-  }
-  return <>{children}</>;
+    </>
+  );
 }
 
 /** Only renders children when the user has the permission (for buttons, links). */

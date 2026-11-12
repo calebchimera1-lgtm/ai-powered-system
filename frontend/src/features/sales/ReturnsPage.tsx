@@ -84,7 +84,7 @@ export function ReturnsPage() {
           catch (err) { toast.info('Receipt not found', errorMessage(err)); }
         }}>
           <input value={receipt} onChange={(e) => setReceipt(e.target.value)} aria-label="Receipt number" placeholder="Receipt number, e.g. RCPT-2026-000123"
-            className="h-10 flex-1 rounded-lg border border-gray-300 px-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
+            className="h-10 w-full rounded-lg border border-gray-300 px-3 text-sm sm:w-auto sm:flex-1 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
           <Button type="submit" disabled={!receipt.trim()}>Start a return</Button>
         </form>
       </Card>

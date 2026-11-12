@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Monitor } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { authApi } from '@/api/auth';
 import type { SessionOut } from '@/api/types';
@@ -10,13 +10,14 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, PageHeader } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { EmailLink, PhoneLink } from '@/components/ui/ContactLink';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { ChangePasswordForm } from '@/features/auth/ChangePasswordForm';
 import { errorMessage } from '@/lib/errors';
 import { describeUserAgent, formatDateTime } from '@/lib/format';
 
-function Detail({ label, value }: { label: string; value: string }) {
+function Detail({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</dt>
@@ -52,8 +53,8 @@ export function AccountPage() {
           <dl className="grid gap-4 sm:grid-cols-2">
             <Detail label="Full name" value={user.full_name} />
             <Detail label="Username" value={user.username} />
-            <Detail label="Email" value={user.email} />
-            <Detail label="Phone" value={user.phone ?? '—'} />
+            <Detail label="Email" value={<EmailLink email={user.email} />} />
+            <Detail label="Phone" value={user.phone ? <PhoneLink phone={user.phone} /> : '—'} />
             <Detail label="Role" value={user.role.display_name} />
             <Detail label="Signed in at" value={formatDateTime(user.last_login_at)} />
           </dl>

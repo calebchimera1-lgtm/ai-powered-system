@@ -65,7 +65,7 @@ export function PurchaseOrderFormPage() {
 
   return (
     <>
-      <Link to="/purchasing/orders" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Purchase orders</Link>
+      <Link to="/purchasing/orders" className="mb-2.5 inline-flex items-center gap-1 py-1.5 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Purchase orders</Link>
       <PageHeader title={editId ? `Edit ${existing.data?.po_number}` : 'New purchase order'} description="Costs are what the supplier charges, excluding VAT." />
       <div className="space-y-4">
         <Card>

@@ -15,6 +15,7 @@ import { ProductPicker } from '@/components/ui/ProductPicker';
 import { useToast } from '@/components/ui/Toast';
 import { printReceipt, Receipt } from '@/features/sales/Receipt';
 import { productsApi } from '@/api/catalog';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { parseError } from '@/lib/errors';
 import { formatKES, formatQty, num, WHOLE_UNITS } from '@/lib/format';
 import { priceCart } from '@/lib/pricing';
@@ -58,6 +59,7 @@ export function PosPage() {
   const requestId = useRef(newRequestId());
 
   const store = useQuery({ queryKey: ['store'], queryFn: salesApi.store, staleTime: 10 * 60_000 });
+  usePageTitle('Point of sale');
   const limit = num(store.data?.max_cashier_discount_percent ?? 10);
 
   const priced = useMemo(() => {
@@ -143,10 +145,11 @@ export function PosPage() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_22rem] xl:grid-cols-[1fr_24rem]">
+      <h1 className="sr-only">Point of sale</h1>
       {/* Cart */}
-      <section aria-label="Cart" className="flex min-h-[60vh] flex-col rounded-xl border border-gray-200 bg-white shadow-card">
+      <section aria-label="Cart" className="flex min-h-[60vh] min-w-0 flex-col rounded-xl border border-gray-200 bg-white shadow-card">
         <div className="flex gap-2 border-b border-gray-100 p-3 sm:p-4">
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <ProductPicker
               ref={pickerRef}
               autoFocus
@@ -214,7 +217,7 @@ export function PosPage() {
       </section>
 
       {/* Payment */}
-      <section aria-label="Payment" className="space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-card lg:sticky lg:top-20 lg:self-start">
+      <section aria-label="Payment" className="min-w-0 space-y-4 rounded-xl border border-gray-200 bg-white p-4 shadow-card lg:sticky lg:top-20 lg:self-start">
         <dl className="space-y-1.5 text-sm">
           <div className="flex justify-between"><dt className="text-gray-500">Subtotal</dt><dd className="tabular-nums">{formatKES(priced.subtotal)}</dd></div>
           {priced.discount > 0 && <div className="flex justify-between text-brand-700"><dt>Discount</dt><dd className="tabular-nums">−{formatKES(priced.discount)}</dd></div>}

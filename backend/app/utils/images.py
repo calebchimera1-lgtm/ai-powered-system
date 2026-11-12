@@ -18,6 +18,7 @@ MAGIC = {
 }
 MAX_PIXELS = 40_000_000  # refuse decompression bombs
 MAX_SIDE = 800
+THUMB_SIDE = 160  # list/detail thumbnails are shown at 40-80 CSS px, so 2x displays get 160
 
 
 class ImageRejected(ValueError):
@@ -65,9 +66,32 @@ def save_product_image(storage_dir: Path, data: bytes) -> str:
     return f"products/{name}"
 
 
+def thumbnail_path(storage_dir: Path, name: str) -> Path | None:
+    """Path of the small WebP thumbnail for a stored product image, made on first request.
+
+    Generated lazily from the stored (already sanitised) image so photos uploaded before
+    thumbnails existed get one too. Returns None if the original is missing.
+    """
+    original = storage_dir / "products" / name
+    if not original.is_file():
+        return None
+    thumb = storage_dir / "products" / "thumbs" / name
+    if not thumb.is_file():
+        thumb.parent.mkdir(parents=True, exist_ok=True)
+        with Image.open(original) as img:
+            img.thumbnail((THUMB_SIDE, THUMB_SIDE))
+            tmp = thumb.with_suffix(".tmp")
+            img.save(tmp, format="WEBP", quality=80, method=4)
+            tmp.replace(thumb)  # atomic, so a concurrent request never reads half a file
+    return thumb
+
+
 def delete_stored(storage_dir: Path, relative: str | None) -> None:
     if not relative:
         return
     path = (storage_dir / relative).resolve()
     if storage_dir.resolve() in path.parents and path.is_file():
         path.unlink()
+    thumb = (path.parent / "thumbs" / path.name).resolve()
+    if storage_dir.resolve() in thumb.parents and thumb.is_file():
+        thumb.unlink()

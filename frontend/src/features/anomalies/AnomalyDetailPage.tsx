@@ -30,7 +30,7 @@ export function AnomalyDetailPage() {
   return (
     <>
       <PageHeader title={a.kind_label} description={`${subject(a)} · ${period(a)}`}
-        actions={<Link to="/anomalies" className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeft className="h-4 w-4" />All irregularities</Link>} />
+        actions={<Link to="/anomalies" className="inline-flex items-center gap-1 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeft className="h-4 w-4" />All irregularities</Link>} />
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <Card>

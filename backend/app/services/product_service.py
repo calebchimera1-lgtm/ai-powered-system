@@ -49,6 +49,13 @@ def image_url(p: Product) -> str | None:
     return f"/api/v1/media/{p.image_path}"
 
 
+def thumbnail_url(p: Product) -> str | None:
+    if not p.image_path:
+        return None
+    folder, _, name = p.image_path.rpartition("/")
+    return f"/api/v1/media/{folder}/thumbs/{name}"
+
+
 def to_out(
     p: Product, *, with_cost: bool, next_expiry: date | None = None
 ) -> ProductOut | ProductWithCost:
@@ -62,6 +69,7 @@ def to_out(
         "default_supplier": p.default_supplier,
         "unit_of_measure": p.unit_of_measure,
         "image_url": image_url(p),
+        "thumbnail_url": thumbnail_url(p),
         "selling_price": p.selling_price,
         "vat_rate": p.vat_rate,
         "quantity_on_hand": p.quantity_on_hand,

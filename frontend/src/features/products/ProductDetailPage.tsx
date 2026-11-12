@@ -32,6 +32,7 @@ import { MovementQty, MovementTypeBadge } from '@/features/stock/movementBits';
 import { WriteOffModal } from '@/features/stock/WriteOffModal';
 import { errorMessage } from '@/lib/errors';
 import { formatDate, formatDateTime, formatKES, formatPercent, formatQty, UNIT_LABELS } from '@/lib/format';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 import { ProductFormModal } from './ProductFormModal';
 import { ExpiryBadge, StockBadge } from './StockBadge';
@@ -112,6 +113,7 @@ export function ProductDetailPage() {
   const [confirm, setConfirm] = useState<'toggle' | 'delete' | null>(null);
 
   const product = useQuery({ queryKey: ['product', id], queryFn: () => productsApi.get(id) });
+  usePageTitle(product.data?.name ?? 'Product');
   const batches = useQuery({
     queryKey: ['product', id, 'batches'],
     queryFn: () => productsApi.batches(id),
@@ -158,14 +160,14 @@ export function ProductDetailPage() {
 
   return (
     <>
-      <Link to="/products" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800">
+      <Link to="/products" className="mb-2.5 inline-flex items-center gap-1 py-1.5 text-sm text-gray-500 hover:text-gray-800">
         <ArrowLeft className="h-4 w-4" /> Products
       </Link>
 
       <div className="mb-6 flex flex-wrap items-start gap-4">
         <div className="relative">
           {p.image_url ? (
-            <img src={p.image_url} alt={p.name} className="h-20 w-20 rounded-xl border border-gray-200 object-cover" />
+            <img src={p.thumbnail_url ?? p.image_url} alt={p.name} width={80} height={80} decoding="async" className="h-20 w-20 rounded-xl border border-gray-200 object-cover" />
           ) : (
             <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-gray-100 text-gray-300">
               <ImageOff className="h-7 w-7" aria-hidden />

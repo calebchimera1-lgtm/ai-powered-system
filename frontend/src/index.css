@@ -9,4 +9,18 @@
   :focus-visible {
     @apply outline-none ring-2 ring-brand-500 ring-offset-2;
   }
+  /* Grid items default to min-width:auto, so one wide table or long word would stretch its
+     column past a phone screen. Let them shrink; wide content scrolls inside its own box. */
+  .grid > * {
+    min-width: 0;
+  }
+  /* Respect the user's reduced-motion setting. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

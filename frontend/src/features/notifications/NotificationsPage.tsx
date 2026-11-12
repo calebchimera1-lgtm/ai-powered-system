@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -12,10 +12,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
 
+import { useMarkRead } from './useMarkRead';
+
 const PAGE = 25;
 
 export function NotificationsPage() {
-  const qc = useQueryClient();
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [page, setPage] = useState(0);
   const q = useQuery({
@@ -23,13 +24,13 @@ export function NotificationsPage() {
     queryFn: () => notificationsApi.list({ unread: unreadOnly || undefined, limit: PAGE, offset: page * PAGE }),
     placeholderData: keepPreviousData,
   });
-  const refresh = () => void qc.invalidateQueries({ queryKey: ['notifications'] });
+  const markRead = useMarkRead();
   const data = q.data;
 
   return (
     <>
       <PageHeader title="Notifications" description="Stock, expiry, approvals, forecasts and irregularities that need your attention."
-        actions={data && data.unread > 0 && <Button variant="secondary" onClick={async () => { await notificationsApi.markRead(); refresh(); }}>Mark all as read</Button>} />
+        actions={data && data.unread > 0 && <Button variant="secondary" loading={markRead.isPending && markRead.variables === undefined} onClick={() => markRead.mutate(undefined)}>Mark all as read</Button>} />
       <Card bodyClassName="p-0">
         <div className="flex gap-1 border-b border-gray-100 p-3" role="tablist" aria-label="Filter notifications">
           {[{ v: false, l: 'All' }, { v: true, l: `Unread${data ? ` (${data.unread})` : ''}` }].map((t) => (
@@ -50,8 +51,8 @@ export function NotificationsPage() {
                 <p className="mt-0.5 text-sm text-gray-600">{n.message}</p>
                 <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-gray-500">
                   {formatDateTime(n.created_at)}
-                  {n.link && <Link to={n.link} onClick={() => !n.is_read && void notificationsApi.markRead([n.id]).then(refresh)} className="font-medium text-brand-700 hover:underline">Open</Link>}
-                  {!n.is_read && <button type="button" className="font-medium text-gray-600 hover:underline" onClick={() => void notificationsApi.markRead([n.id]).then(refresh)}>Mark as read</button>}
+                  {n.link && <Link to={n.link} onClick={() => !n.is_read && markRead.mutate([n.id])} className="inline-block py-1.5 font-medium text-brand-700 hover:underline">Open</Link>}
+                  {!n.is_read && <button type="button" className="inline-block py-1.5 font-medium text-gray-600 hover:underline disabled:opacity-50" disabled={markRead.isPending && markRead.variables?.[0] === n.id} onClick={() => markRead.mutate([n.id])}>Mark as read</button>}
                 </p>
               </div>
             </li>

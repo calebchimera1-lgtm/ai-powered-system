@@ -16,6 +16,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDate, formatDateTime, formatKES, formatQty } from '@/lib/format';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 import { PO_STATUS } from './PurchaseOrdersPage';
 
@@ -28,6 +29,7 @@ export function PurchaseOrderDetailPage() {
   const navigate = useNavigate();
   const [cancelling, setCancelling] = useState(false);
   const po = useQuery({ queryKey: ['purchase-order', id], queryFn: () => purchasingApi.order(id) });
+  usePageTitle(po.data ? `Purchase order ${po.data.po_number}` : 'Purchase order');
   const receipts = useQuery({ queryKey: ['purchases', { po: id }], queryFn: () => purchasingApi.receipts({ page_size: 50 }), select: (p) => p.items.filter((r) => r.purchase_order_id === id) });
   const act = useMutation({
     mutationFn: (fn: () => Promise<unknown>) => fn(),
@@ -42,7 +44,7 @@ export function PurchaseOrderDetailPage() {
 
   return (
     <>
-      <Link to="/purchasing/orders" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Purchase orders</Link>
+      <Link to="/purchasing/orders" className="mb-2.5 inline-flex items-center gap-1 py-1.5 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Purchase orders</Link>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">{o.po_number}</h1>

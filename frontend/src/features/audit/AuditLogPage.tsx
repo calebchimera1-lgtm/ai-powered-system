@@ -112,7 +112,7 @@ export function AuditLogPage() {
         {data && data.items.length === 0 && <EmptyState title="No activity found" description="Try a wider date range." />}
 
         {data && data.items.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr>

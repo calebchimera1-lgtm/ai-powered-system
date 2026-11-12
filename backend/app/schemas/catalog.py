@@ -180,6 +180,7 @@ class ProductOut(ORMModel):
     default_supplier: SupplierBrief | None
     unit_of_measure: str
     image_url: str | None = None
+    thumbnail_url: str | None = None
     selling_price: Decimal
     vat_rate: Decimal
     quantity_on_hand: Decimal

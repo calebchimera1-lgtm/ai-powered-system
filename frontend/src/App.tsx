@@ -1,49 +1,17 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import { lazy, Suspense, type ReactNode } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, type ComponentType, type ReactNode } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from '@/auth/AuthProvider';
 import { RequireAuth, RequirePermission } from '@/auth/ProtectedRoute';
 import { PERM } from '@/auth/permissions';
 import { AppShell } from '@/components/layout/AppShell';
-import { FullPageSpinner } from '@/components/ui/Spinner';
 import { ToastProvider } from '@/components/ui/Toast';
-import { AccountPage } from '@/features/account/AccountPage';
-import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
-import { HomePage } from '@/features/home/HomePage';
-import { UsersPage } from '@/features/users/UsersPage';
-import { CategoriesPage } from '@/features/categories/CategoriesPage';
-import { ExpensesPage } from '@/features/finance/ExpensesPage';
-import { PosPage } from '@/features/pos/PosPage';
-import { AnomaliesPage } from '@/features/anomalies/AnomaliesPage';
-import { AnomalyDetailPage } from '@/features/anomalies/AnomalyDetailPage';
-import { ForecastDetailPage } from '@/features/forecasting/ForecastDetailPage';
-import { ForecastsPage } from '@/features/forecasting/ForecastsPage';
-import { ReorderPage } from '@/features/forecasting/ReorderPage';
-import { BackupsPage } from '@/features/admin/BackupsPage';
-import { ReportsPage } from '@/features/reports/ReportsPage';
-import { NotificationsPage } from '@/features/notifications/NotificationsPage';
-import { InvoiceReviewPage } from '@/features/invoices/InvoiceReviewPage';
-import { InvoicesPage } from '@/features/invoices/InvoicesPage';
-import { GoodsReceivedDetailPage } from '@/features/purchasing/GoodsReceivedDetailPage';
-import { GoodsReceivedPage } from '@/features/purchasing/GoodsReceivedPage';
-import { PurchaseOrderDetailPage } from '@/features/purchasing/PurchaseOrderDetailPage';
-import { PurchaseOrderFormPage } from '@/features/purchasing/PurchaseOrderFormPage';
-import { PurchaseOrdersPage } from '@/features/purchasing/PurchaseOrdersPage';
-import { ReceiveGoodsPage } from '@/features/purchasing/ReceiveGoodsPage';
-import { ReturnsPage } from '@/features/sales/ReturnsPage';
-import { SaleDetailPage } from '@/features/sales/SaleDetailPage';
-import { SalesPage } from '@/features/sales/SalesPage';
-import { ProductDetailPage } from '@/features/products/ProductDetailPage';
-import { ProductsPage } from '@/features/products/ProductsPage';
-import { AdjustmentsPage } from '@/features/stock/AdjustmentsPage';
-import { StockMovementsPage } from '@/features/stock/StockMovementsPage';
-import { SupplierDetailPage } from '@/features/suppliers/SupplierDetailPage';
-import { SuppliersPage } from '@/features/suppliers/SuppliersPage';
+import { NotFoundPage } from '@/features/errors/NotFoundPage';
 
 export function createQueryClient(): QueryClient {
   return new QueryClient({
@@ -59,10 +27,45 @@ export function createQueryClient(): QueryClient {
   });
 }
 
-// The profit page carries the charting library; load it only when opened.
-const FinancePage = lazy(() =>
-  import('@/features/finance/FinancePage').then((m) => ({ default: m.FinancePage })),
-);
+// Every page inside the app shell is its own chunk, so a cashier's first load doesn't carry
+// the charting library, the invoice reviewer or the admin screens. The shell's <Suspense>
+// shows a spinner while a page's chunk downloads.
+function page<K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) {
+  return lazy(() => load().then((m) => ({ default: m[name] })));
+}
+const FinancePage = page(() => import('@/features/finance/FinancePage'), 'FinancePage');
+const AccountPage = page(() => import('@/features/account/AccountPage'), 'AccountPage');
+const AuditLogPage = page(() => import('@/features/audit/AuditLogPage'), 'AuditLogPage');
+const HomePage = page(() => import('@/features/home/HomePage'), 'HomePage');
+const UsersPage = page(() => import('@/features/users/UsersPage'), 'UsersPage');
+const CategoriesPage = page(() => import('@/features/categories/CategoriesPage'), 'CategoriesPage');
+const ExpensesPage = page(() => import('@/features/finance/ExpensesPage'), 'ExpensesPage');
+const PosPage = page(() => import('@/features/pos/PosPage'), 'PosPage');
+const AnomaliesPage = page(() => import('@/features/anomalies/AnomaliesPage'), 'AnomaliesPage');
+const AnomalyDetailPage = page(() => import('@/features/anomalies/AnomalyDetailPage'), 'AnomalyDetailPage');
+const ForecastDetailPage = page(() => import('@/features/forecasting/ForecastDetailPage'), 'ForecastDetailPage');
+const ForecastsPage = page(() => import('@/features/forecasting/ForecastsPage'), 'ForecastsPage');
+const ReorderPage = page(() => import('@/features/forecasting/ReorderPage'), 'ReorderPage');
+const BackupsPage = page(() => import('@/features/admin/BackupsPage'), 'BackupsPage');
+const ReportsPage = page(() => import('@/features/reports/ReportsPage'), 'ReportsPage');
+const NotificationsPage = page(() => import('@/features/notifications/NotificationsPage'), 'NotificationsPage');
+const InvoiceReviewPage = page(() => import('@/features/invoices/InvoiceReviewPage'), 'InvoiceReviewPage');
+const InvoicesPage = page(() => import('@/features/invoices/InvoicesPage'), 'InvoicesPage');
+const GoodsReceivedDetailPage = page(() => import('@/features/purchasing/GoodsReceivedDetailPage'), 'GoodsReceivedDetailPage');
+const GoodsReceivedPage = page(() => import('@/features/purchasing/GoodsReceivedPage'), 'GoodsReceivedPage');
+const PurchaseOrderDetailPage = page(() => import('@/features/purchasing/PurchaseOrderDetailPage'), 'PurchaseOrderDetailPage');
+const PurchaseOrderFormPage = page(() => import('@/features/purchasing/PurchaseOrderFormPage'), 'PurchaseOrderFormPage');
+const PurchaseOrdersPage = page(() => import('@/features/purchasing/PurchaseOrdersPage'), 'PurchaseOrdersPage');
+const ReceiveGoodsPage = page(() => import('@/features/purchasing/ReceiveGoodsPage'), 'ReceiveGoodsPage');
+const ReturnsPage = page(() => import('@/features/sales/ReturnsPage'), 'ReturnsPage');
+const SaleDetailPage = page(() => import('@/features/sales/SaleDetailPage'), 'SaleDetailPage');
+const SalesPage = page(() => import('@/features/sales/SalesPage'), 'SalesPage');
+const ProductDetailPage = page(() => import('@/features/products/ProductDetailPage'), 'ProductDetailPage');
+const ProductsPage = page(() => import('@/features/products/ProductsPage'), 'ProductsPage');
+const AdjustmentsPage = page(() => import('@/features/stock/AdjustmentsPage'), 'AdjustmentsPage');
+const StockMovementsPage = page(() => import('@/features/stock/StockMovementsPage'), 'StockMovementsPage');
+const SupplierDetailPage = page(() => import('@/features/suppliers/SupplierDetailPage'), 'SupplierDetailPage');
+const SuppliersPage = page(() => import('@/features/suppliers/SuppliersPage'), 'SuppliersPage');
 
 function Guard({ perms, children }: { perms: string[]; children: ReactNode }) {
   return <RequirePermission anyOf={perms}>{children}</RequirePermission>;
@@ -98,7 +101,7 @@ export function AppRoutes() {
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/admin/backups" element={<Guard perms={[PERM.BACKUPS_MANAGE]}><BackupsPage /></Guard>} />
           <Route path="/reports" element={<Guard perms={[PERM.REPORTS_ALL, PERM.REPORTS_INVENTORY, PERM.REPORTS_OWN_SALES]}><ReportsPage /></Guard>} />
-          <Route path="/finance" element={<Guard perms={[PERM.FINANCE_READ]}><Suspense fallback={<FullPageSpinner label="Loading…" />}><FinancePage /></Suspense></Guard>} />
+          <Route path="/finance" element={<Guard perms={[PERM.FINANCE_READ]}><FinancePage /></Guard>} />
           <Route path="/expenses" element={<Guard perms={[PERM.FINANCE_READ]}><ExpensesPage /></Guard>} />
           <Route path="/products" element={<Guard perms={[PERM.PRODUCTS_READ]}><ProductsPage /></Guard>} />
           <Route path="/products/:id" element={<Guard perms={[PERM.PRODUCTS_READ]}><ProductDetailPage /></Guard>} />
@@ -124,7 +127,7 @@ export function AppRoutes() {
             }
           />
           <Route path="/account" element={<AccountPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
     </Routes>

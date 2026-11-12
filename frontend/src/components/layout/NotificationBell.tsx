@@ -1,10 +1,11 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { AlertOctagon, AlertTriangle, Bell, Info } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { notificationsApi, type AppNotification } from '@/api/analytics';
+import { useMarkRead } from '@/features/notifications/useMarkRead';
 import { formatDateTime } from '@/lib/format';
 
 export function SeverityIcon({ severity, className }: { severity: AppNotification['severity']; className?: string }) {
@@ -18,7 +19,6 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const count = useQuery({ queryKey: ['notifications', 'count'], queryFn: notificationsApi.unreadCount, refetchInterval: 60_000 });
   const latest = useQuery({ queryKey: ['notifications', 'latest'], queryFn: () => notificationsApi.list({ limit: 8 }), enabled: open });
 
@@ -34,11 +34,11 @@ export function NotificationBell() {
     };
   }, [open]);
 
-  const refresh = () => void qc.invalidateQueries({ queryKey: ['notifications'] });
+  const markRead = useMarkRead();
   const openItem = async (n: AppNotification) => {
     setOpen(false);
-    if (!n.is_read) await notificationsApi.markRead([n.id]).catch(() => undefined);
-    refresh();
+    // Reading the notification matters more than the read flag: navigate even if marking fails.
+    if (!n.is_read) await markRead.mutateAsync([n.id]).catch(() => undefined);
     if (n.link) navigate(n.link);
   };
   const unread = count.data ?? 0;
@@ -60,8 +60,8 @@ export function NotificationBell() {
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-2.5">
             <p className="text-sm font-semibold text-gray-900">Notifications</p>
             {unread > 0 && (
-              <button type="button" className="text-xs font-medium text-brand-700 hover:underline"
-                onClick={async () => { await notificationsApi.markRead(); refresh(); }}>
+              <button type="button" className="py-1 text-xs font-medium text-brand-700 hover:underline disabled:opacity-50"
+                disabled={markRead.isPending} onClick={() => markRead.mutate(undefined)}>
                 Mark all as read
               </button>
             )}

@@ -61,7 +61,7 @@ export function BackupsPage() {
         {q.isError && <div className="p-4"><Alert tone="error">{errorMessage(q.error)}</Alert></div>}
         {d && d.backups.length === 0 && <EmptyState title="No backups yet" description="The first nightly backup runs when the worker starts. You can also back up now." />}
         {d && d.backups.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="min-w-full text-sm">
               <caption className="sr-only">Backups</caption>
               <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">

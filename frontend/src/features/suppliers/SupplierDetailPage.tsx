@@ -18,8 +18,10 @@ import { Modal } from '@/components/ui/Modal';
 import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { useDebounce } from '@/hooks/useDebounce';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { errorMessage } from '@/lib/errors';
 import { formatDate, formatKES } from '@/lib/format';
+import { EmailLink, PhoneLink } from '@/components/ui/ContactLink';
 
 import { SupplierFormModal } from './SupplierFormModal';
 
@@ -103,6 +105,7 @@ export function SupplierDetailPage() {
   const [toggling, setToggling] = useState(false);
 
   const supplier = useQuery({ queryKey: ['supplier', id], queryFn: () => suppliersApi.get(id) });
+  usePageTitle(supplier.data?.name ?? 'Supplier');
   const products = useQuery({ queryKey: ['supplier', id, 'products'], queryFn: () => suppliersApi.products(id) });
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ['supplier', id] });
@@ -115,7 +118,7 @@ export function SupplierDetailPage() {
 
   return (
     <>
-      <Link to="/suppliers" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Suppliers</Link>
+      <Link to="/suppliers" className="mb-2.5 inline-flex items-center gap-1 py-1.5 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Suppliers</Link>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">{s.name}</h1>
@@ -137,8 +140,8 @@ export function SupplierDetailPage() {
         <Card title="Contact" className="lg:order-2">
           <ul className="space-y-3 text-sm text-gray-700">
             <li className="flex items-center gap-2"><UserRound className="h-4 w-4 text-gray-400" aria-hidden />{s.contact_person ?? '—'}</li>
-            <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-gray-400" aria-hidden />{s.phone ? <a className="text-brand-700 hover:underline" href={`tel:${s.phone.replace(/\s/g, '')}`}>{s.phone}</a> : '—'}</li>
-            <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gray-400" aria-hidden />{s.email ? <a className="break-all text-brand-700 hover:underline" href={`mailto:${s.email}`}>{s.email}</a> : '—'}</li>
+            <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-gray-400" aria-hidden />{s.phone ? <PhoneLink phone={s.phone} /> : '—'}</li>
+            <li className="flex items-center gap-2"><Mail className="h-4 w-4 text-gray-400" aria-hidden />{s.email ? <EmailLink email={s.email} /> : '—'}</li>
             <li className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" aria-hidden /><span className="whitespace-pre-line">{s.address ?? '—'}</span></li>
           </ul>
           {s.notes && <p className="mt-4 border-t border-gray-100 pt-3 text-sm text-gray-600">{s.notes}</p>}

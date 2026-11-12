@@ -98,7 +98,7 @@ export function ProductsPage() {
       render: (p) => (
         <Link to={`/products/${p.id}`} className="flex min-w-[9rem] items-center gap-3 sm:min-w-[13rem]">
           {p.image_url ? (
-            <img src={p.image_url} alt="" className="hidden h-10 w-10 shrink-0 rounded-lg border border-gray-200 object-cover sm:block" />
+            <img src={p.thumbnail_url ?? p.image_url} alt="" width={40} height={40} loading="lazy" decoding="async" className="hidden h-10 w-10 shrink-0 rounded-lg border border-gray-200 object-cover sm:block" />
           ) : (
             <span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-300 sm:flex">
               <ImageOff className="h-4 w-4" aria-hidden />
@@ -240,7 +240,7 @@ export function ProductsPage() {
                   type="button"
                   onClick={() => setParam('stock', f.value)}
                   aria-pressed={stock === f.value}
-                  className={`rounded-md px-3 py-1 text-sm font-medium ${
+                  className={`rounded-md px-3 py-2 text-sm font-medium sm:py-1 ${
                     stock === f.value ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >

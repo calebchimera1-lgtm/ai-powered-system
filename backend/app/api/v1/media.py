@@ -12,6 +12,7 @@ from fastapi.responses import FileResponse
 
 from app.core.config import get_settings
 from app.core.exceptions import NotFoundError
+from app.utils import images
 
 router = APIRouter(prefix="/media", tags=["Media"])
 
@@ -24,6 +25,19 @@ def product_image(name: str) -> FileResponse:
         raise NotFoundError("Image not found")
     path = get_settings().storage_dir / "products" / name
     if not path.is_file():
+        raise NotFoundError("Image not found")
+    return FileResponse(
+        path, media_type="image/webp", headers={"Cache-Control": "public, max-age=31536000"}
+    )
+
+
+@router.get("/products/thumbs/{name}", response_class=FileResponse)
+def product_thumbnail(name: str) -> FileResponse:
+    """A 160 px version of the image, for lists and small previews."""
+    if not NAME_RE.match(name):
+        raise NotFoundError("Image not found")
+    path = images.thumbnail_path(get_settings().storage_dir, name)
+    if path is None:
         raise NotFoundError("Image not found")
     return FileResponse(
         path, media_type="image/webp", headers={"Cache-Control": "public, max-age=31536000"}

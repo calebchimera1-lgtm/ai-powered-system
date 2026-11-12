@@ -15,6 +15,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime, formatKES, formatQty } from '@/lib/format';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 import { printReceipt, Receipt } from './Receipt';
 import { ReturnModal } from './ReturnModal';
@@ -27,6 +28,7 @@ export function SaleDetailPage() {
   const qc = useQueryClient();
   const [returning, setReturning] = useState(false);
   const sale = useQuery({ queryKey: ['sale', id], queryFn: () => salesApi.get(id) });
+  usePageTitle(sale.data ? `Receipt ${sale.data.receipt_number}` : 'Receipt');
   const store = useQuery({ queryKey: ['store'], queryFn: salesApi.store, staleTime: 10 * 60_000 });
   const returns = useQuery({ queryKey: ['returns', { sale_id: id }], queryFn: () => salesApi.returns({ sale_id: id }) });
 
@@ -37,7 +39,7 @@ export function SaleDetailPage() {
 
   return (
     <>
-      <Link to="/sales" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Sales</Link>
+      <Link to="/sales" className="mb-2.5 inline-flex items-center gap-1 py-1.5 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Sales</Link>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">{s.receipt_number}</h1>

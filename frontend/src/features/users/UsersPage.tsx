@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime } from '@/lib/format';
+import { EmailLink, PhoneLink } from '@/components/ui/ContactLink';
 
 import { LinkModal } from './LinkModal';
 import { UserFormModal, type CreateValues, type EditValues } from './UserFormModal';
@@ -150,8 +151,8 @@ export function UsersPage() {
       hideOnMobile: true,
       render: (u) => (
         <div className="text-xs">
-          <p className="text-gray-700">{u.email}</p>
-          {u.phone && <p className="text-gray-500">{u.phone}</p>}
+          <p><EmailLink email={u.email} /></p>
+          {u.phone && <p><PhoneLink phone={u.phone} className="inline-block py-0.5" /></p>}
         </div>
       ),
     },

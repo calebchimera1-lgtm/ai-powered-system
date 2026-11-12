@@ -28,7 +28,7 @@ export function ForecastDetailPage() {
   return (
     <>
       <PageHeader title={f.product.name} description={`${f.product.sku} · forecast made ${formatDate(run.finished_at)}`}
-        actions={<Link to="/forecasts" className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeft className="h-4 w-4" />All forecasts</Link>} />
+        actions={<Link to="/forecasts" className="inline-flex items-center gap-1 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeft className="h-4 w-4" />All forecasts</Link>} />
       {f.low_confidence && <div className="mb-4"><Alert tone="warning">Only {f.history_days} days of sales so far: this is a rough forecast from a simple model. It improves as more sales are recorded.</Alert></div>}
       <div className="grid gap-4 xl:grid-cols-3">
         <Card title="Daily sales and forecast" className="xl:col-span-2">
@@ -108,7 +108,7 @@ function Models({ scores, chosen }: { scores: ModelScore[]; chosen: string }) {
   const sorted = [...scores].sort((a, b) => (a.rmsse ?? 99) - (b.rmsse ?? 99));
   return (
     <Card title="How the model was chosen" description="Each model forecast this product's past weeks without seeing them; the lowest RMSSE wins. Below 1.00 beats “same weekday last week”." bodyClassName="p-0">
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
             <tr><th className="px-4 py-2">Model</th><th className="px-3 py-2 text-right">Avg error / day</th><th className="px-3 py-2 text-right">MASE</th><th className="px-3 py-2 text-right">RMSSE</th></tr>

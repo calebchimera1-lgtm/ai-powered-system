@@ -58,7 +58,7 @@ export function DashboardPage({ greeting }: { greeting: string }) {
 
   return (
     <>
-      <PageHeader title={`${greeting}, ${user?.full_name.split(' ')[0] ?? ''}`}
+      <PageHeader documentTitle="Home" title={`${greeting}, ${user?.full_name.split(' ')[0] ?? ''}`}
         description={`Store overview${catName ? ` · ${catName}` : ''}: ${formatDate(range.from)} to ${formatDate(range.to)}`} />
 
       {/* Filters: one row above everything they control. */}
@@ -221,7 +221,7 @@ function MoverCard({ title, rows, empty, slow }: { title: string; rows: Mover[];
 
 function ListCard({ title, link, empty, children }: { title: string; link: { to: string; label: string }; empty: string; children: ReactNode[] }) {
   return (
-    <Card title={title} actions={<Link to={link.to} className="text-sm font-medium text-brand-700 hover:underline">{link.label}</Link>} bodyClassName="p-0">
+    <Card title={title} actions={<Link to={link.to} className="inline-block py-1.5 text-sm font-medium text-brand-700 hover:underline">{link.label}</Link>} bodyClassName="p-0">
       {children.length === 0 ? <p className="px-5 py-6 text-sm text-gray-500">{empty}</p> : <ul className="divide-y divide-gray-100">{children}</ul>}
     </Card>
   );

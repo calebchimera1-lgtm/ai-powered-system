@@ -24,7 +24,7 @@ export function ReorderPage() {
   return (
     <>
       <PageHeader title="Reorder suggestions" description="Products at or below their reorder point, grouped by supplier. Adjust the quantities and create a draft purchase order to review and send."
-        actions={<Link to="/forecasts" className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeft className="h-4 w-4" />Demand forecast</Link>} />
+        actions={<Link to="/forecasts" className="inline-flex items-center gap-1 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeft className="h-4 w-4" />Demand forecast</Link>} />
       {q.data.length === 0 ? (
         <Card><EmptyState icon={<PackageCheck className="h-6 w-6" aria-hidden />} title="Nothing to reorder" description="Every product has enough stock (plus open orders) to last until a delivery could arrive." /></Card>
       ) : (
@@ -73,7 +73,7 @@ function SupplierGroup({ group }: { group: ReorderGroup }) {
         : <span className="text-xs text-gray-500">Set a usual supplier on these products to order them here.</span>}
       bodyClassName="p-0">
       {error && <div className="p-4"><Alert tone="error">{error}</Alert></div>}
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="min-w-full text-sm">
           <caption className="sr-only">Suggested order for {group.supplier_name}</caption>
           <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">

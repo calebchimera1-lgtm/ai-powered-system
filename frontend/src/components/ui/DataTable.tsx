@@ -36,7 +36,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   return (
     <div className="relative">
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           {caption && <caption className="sr-only">{caption}</caption>}
           <thead className="bg-gray-50">
@@ -123,7 +123,7 @@ export function Pagination({
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          className="rounded-lg border border-gray-300 p-1.5 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg border border-gray-300 p-2.5 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 sm:p-1.5"
           aria-label="Previous page"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -135,7 +135,7 @@ export function Pagination({
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= pages}
-          className="rounded-lg border border-gray-300 p-1.5 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-lg border border-gray-300 p-2.5 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 sm:p-1.5"
           aria-label="Next page"
         >
           <ChevronRight className="h-4 w-4" />

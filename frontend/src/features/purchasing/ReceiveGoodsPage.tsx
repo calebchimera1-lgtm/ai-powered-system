@@ -87,7 +87,7 @@ export function ReceiveGoodsPage() {
 
   return (
     <>
-      <Link to={poId ? `/purchasing/orders/${poId}` : '/purchasing/receipts'} className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800">
+      <Link to={poId ? `/purchasing/orders/${poId}` : '/purchasing/receipts'} className="mb-2.5 inline-flex items-center gap-1 py-1.5 text-sm text-gray-500 hover:text-gray-800">
         <ArrowLeft className="h-4 w-4" /> {poId ? po.data?.po_number : 'Goods received'}
       </Link>
       <PageHeader title="Receive goods" description={poId ? `Against ${po.data?.po_number}. Adjust quantities to what actually arrived.` : 'Record a delivery from a supplier.'} />

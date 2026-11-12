@@ -8,18 +8,20 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { DataTable } from '@/components/ui/DataTable';
 import { Spinner } from '@/components/ui/Spinner';
+import { usePageTitle } from '@/hooks/usePageTitle';
 import { errorMessage } from '@/lib/errors';
 import { formatDate, formatDateTime, formatKES, formatQty } from '@/lib/format';
 
 export function GoodsReceivedDetailPage() {
   const id = Number(useParams().id);
   const q = useQuery({ queryKey: ['purchase', id], queryFn: () => purchasingApi.receipt(id) });
+  usePageTitle(q.data ? `Delivery ${q.data.grn_number}` : 'Delivery');
   if (q.isLoading) return <div className="flex justify-center py-20"><Spinner label="Loading…" /></div>;
   if (q.isError || !q.data) return <Alert tone="error">{errorMessage(q.error)}</Alert>;
   const p = q.data;
   return (
     <>
-      <Link to="/purchasing/receipts" className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Goods received</Link>
+      <Link to="/purchasing/receipts" className="mb-2.5 inline-flex items-center gap-1 py-1.5 text-sm text-gray-500 hover:text-gray-800"><ArrowLeft className="h-4 w-4" /> Goods received</Link>
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900 sm:text-2xl">{p.grn_number}</h1>
         <p className="mt-1 text-sm text-gray-500">

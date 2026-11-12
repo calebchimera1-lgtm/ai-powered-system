@@ -1,7 +1,11 @@
 import { Boxes } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { AppFooter } from '@/components/layout/AppFooter';
+import { usePageTitle } from '@/hooks/usePageTitle';
+
 export function AuthLayout({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+  usePageTitle(title);
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-brand-50 to-gray-50 px-4 py-10">
       <div className="mb-6 flex items-center gap-3">
@@ -18,6 +22,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
         {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
         <div className="mt-6">{children}</div>
       </div>
+      <AppFooter signedIn={false} className="mt-8" />
     </div>
   );
 }

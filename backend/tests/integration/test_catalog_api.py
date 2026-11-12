@@ -289,6 +289,14 @@ def test_image_upload_serving_and_rejection(client: TestClient, admin) -> None:
     assert url.startswith("/api/v1/media/products/") and url.endswith(".webp")
     img = client.get(url)  # public, unguessable name
     assert img.status_code == 200 and img.headers["content-type"] == "image/webp"
+    thumb_url = r.json()["thumbnail_url"]
+    assert thumb_url == url.replace("/products/", "/products/thumbs/")
+    thumb = client.get(thumb_url)
+    assert thumb.status_code == 200 and thumb.headers["content-type"] == "image/webp"
+    assert len(thumb.content) < len(img.content)
+    with Image.open(io.BytesIO(thumb.content)) as t:
+        assert max(t.size) <= 160
+    assert client.get("/api/v1/media/products/thumbs/..%2Fx.webp").status_code == 404
 
     fake = client.post(
         f"{PRODUCTS}/{p['id']}/image",
@@ -300,6 +308,7 @@ def test_image_upload_serving_and_rejection(client: TestClient, admin) -> None:
 
     removed = client.delete(f"{PRODUCTS}/{p['id']}/image", headers=admin).json()
     assert removed["image_url"] is None and client.get(url).status_code == 404
+    assert removed["thumbnail_url"] is None and client.get(thumb_url).status_code == 404
 
 
 def test_product_changes_are_audited(client: TestClient, admin) -> None:

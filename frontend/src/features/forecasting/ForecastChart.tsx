@@ -53,7 +53,7 @@ export function ForecastChart({ series, today, unit }: { series: SeriesPoint[]; 
           <li className="flex items-center gap-1.5"><span className="w-4 border-t-2 border-dashed" style={{ borderColor: HUE }} />Forecast</li>
           <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-sm" style={{ background: HUE, opacity: 0.18 }} />80% range</li>
         </ul>
-        <button type="button" onClick={() => setAsTable((v) => !v)} className="text-xs font-medium text-brand-700 hover:underline">
+        <button type="button" onClick={() => setAsTable((v) => !v)} className="py-2 text-xs font-medium text-brand-700 hover:underline">
           {asTable ? 'Show chart' : 'Show as table'}
         </button>
       </div>

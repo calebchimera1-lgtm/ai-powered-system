@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
+import { usePageTitle } from '@/hooks/usePageTitle';
+
 export function Card({
   title,
   description,
@@ -17,7 +19,7 @@ export function Card({
   bodyClassName?: string;
 }) {
   return (
-    <section className={clsx('rounded-xl border border-gray-200 bg-white shadow-card', className)}>
+    <section className={clsx('min-w-0 rounded-xl border border-gray-200 bg-white shadow-card', className)}>
       {(title || actions) && (
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-4 py-3 sm:px-5">
           <div className="min-w-0">
@@ -36,11 +38,15 @@ export function PageHeader({
   title,
   description,
   actions,
+  documentTitle,
 }: {
   title: string;
   description?: string;
   actions?: ReactNode;
+  /** Browser tab title, when it should differ from the heading (e.g. a greeting). */
+  documentTitle?: string;
 }) {
+  usePageTitle(documentTitle ?? title);
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">

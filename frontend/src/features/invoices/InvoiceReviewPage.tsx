@@ -41,7 +41,7 @@ export function InvoiceReviewPage() {
       <PageHeader
         title={inv.invoice_number ? `Invoice ${inv.invoice_number}` : 'Scanned invoice'}
         description={`${inv.original_filename} · uploaded ${formatDateTime(inv.created_at)} by ${inv.uploaded_by.full_name}`}
-        actions={<Link to="/purchasing/invoices" className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeft className="h-4 w-4" />All invoices</Link>}
+        actions={<Link to="/purchasing/invoices" className="inline-flex items-center gap-1 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"><ArrowLeft className="h-4 w-4" />All invoices</Link>}
       />
       {isWorking(inv.status) ? (
         <Card>
@@ -357,7 +357,7 @@ function LineRow({ line: l, index, editable, pricesIncludeVat, flags, onChange, 
           <p className="text-xs font-medium uppercase tracking-wide text-gray-500">Line {lineNo}{l.item_code && ` · code ${l.item_code}`}</p>
           {editable ? (
             <input aria-label={`Line ${lineNo} description as printed`} value={l.description} onChange={(e) => onChange({ description: e.target.value })}
-              className="mt-0.5 w-full rounded border border-transparent bg-transparent px-1 py-0.5 font-mono text-sm text-gray-900 hover:border-gray-200 focus:border-brand-500 focus:outline-none" placeholder="Description as printed" />
+              className="mt-0.5 w-full rounded border border-transparent bg-transparent px-1 py-1.5 font-mono text-sm text-gray-900 hover:border-gray-200 focus:border-brand-500 focus:outline-none" placeholder="Description as printed" />
           ) : <p className="mt-0.5 font-mono text-sm text-gray-900">{l.description}</p>}
         </div>
         {editable && <Button variant="ghost" size="sm" onClick={onRemove} aria-label={`Remove line ${lineNo}`} icon={<Trash2 className="h-4 w-4" />} />}
