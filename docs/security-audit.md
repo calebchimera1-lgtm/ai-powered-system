@@ -66,7 +66,7 @@ Deployment: `docker-compose.yml`, `docker-compose.dev.yml`, new `docker/db/10-ap
 | Live two-step sign-in and reset-link browser test (14 checks) | 14 passed |
 | Live: IP spoofing, rate limits, headers, HSTS, API docs, exposed files | all as expected (see table above) |
 | Live: backup, download, restore under the least-privilege role | passed, data identical |
-| Website regression (32 keyboard/mobile checks) | passed |
+| Website regression (32 keyboard/mobile checks; 198-page audit: every route × admin and cashier × phone, tablet, desktop) | passed; 0 console errors (no CSP violations), 0 failed API calls, 0 overflow, 0 dead links |
 | Git history and build secret scan | clean |
 | Container logs | no errors; no secrets |
 
