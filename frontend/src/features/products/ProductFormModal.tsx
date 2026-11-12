@@ -125,7 +125,7 @@ export function ProductFormModal({
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: toForm(product) });
+  } = useForm<z.input<typeof schema>, unknown, FormValues>({ resolver: zodResolver(schema), defaultValues: toForm(product) });
 
   // Reset when the dialog opens or a different product is loaded, but not when the same
   // product object is refreshed in the background (that would wipe the user's edits).

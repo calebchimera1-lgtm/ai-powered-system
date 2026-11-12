@@ -140,7 +140,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <BrowserRouter>
           <AuthProvider>
             <AppRoutes />
           </AuthProvider>

@@ -1,5 +1,5 @@
 # Runtime dependencies (Phase 1). Pinned for reproducible builds.
-fastapi==0.115.6
+fastapi==0.162.5
 uvicorn[standard]==0.34.0
 sqlalchemy==2.0.36
 alembic==1.14.0
@@ -7,17 +7,17 @@ psycopg[binary]==3.2.3
 pydantic==2.10.4
 pydantic-settings==2.7.0
 email-validator==2.2.0
-pyjwt==2.10.1
+pyjwt==2.15.1
 argon2-cffi==23.1.0
-python-multipart==0.0.20
-pillow==11.0.0
+python-multipart==0.0.33
+pillow==13.0.0
 python-barcode==0.15.1
 # Phase 4: invoice digitization (OCR runs on CPU; no GPU needed)
 numpy==2.1.3
 opencv-python-headless==4.10.0.84
 pytesseract==0.3.13
-pypdfium2==4.30.0
-pdfplumber==0.11.4
+pypdfium2==5.15.2
+pdfplumber==0.11.10
 rapidfuzz==3.10.1
 reportlab==4.2.5
 

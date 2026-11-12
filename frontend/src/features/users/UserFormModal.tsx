@@ -21,7 +21,7 @@ const baseSchema = z.object({
     .trim()
     .regex(/^(\+?[0-9 ]{7,20})?$/, 'Use a phone number such as +254712345678')
     .optional(),
-  role: z.enum(ROLE_NAMES, { errorMap: () => ({ message: 'Choose a role' }) }),
+  role: z.enum(ROLE_NAMES, { error: 'Choose a role' }),
 });
 
 const createSchema = baseSchema.extend({

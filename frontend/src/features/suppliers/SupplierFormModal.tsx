@@ -30,7 +30,7 @@ export function SupplierFormModal({ open, supplier, onClose, onSave }: {
   onSave: (body: SupplierInput) => Promise<void>;
 }) {
   const [formError, setFormError] = useState<string | null>(null);
-  const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm<FormValues>({ resolver: zodResolver(schema) });
+  const { register, handleSubmit, reset, setError, formState: { errors, isSubmitting } } = useForm<z.input<typeof schema>, unknown, FormValues>({ resolver: zodResolver(schema) });
 
   const supplierKey = supplier?.id ?? null;
   const latest = useRef(supplier);

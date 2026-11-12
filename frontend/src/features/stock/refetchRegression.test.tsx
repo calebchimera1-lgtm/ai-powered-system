@@ -25,7 +25,7 @@ const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 const wrap = (ui: ReactElement) => (
   <QueryClientProvider client={qc}>
     <ToastProvider>
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouter>
         <AuthProvider>{ui}</AuthProvider>
       </MemoryRouter>
     </ToastProvider>
