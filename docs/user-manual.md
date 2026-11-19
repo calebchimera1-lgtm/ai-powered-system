@@ -51,7 +51,13 @@ Numbers are in Kenyan shillings (KES). Shelf prices include VAT.
 3. A **discount** of up to 10% can be given. More needs a manager.
 4. Choose how the customer pays: **Cash**, **M-Pesa** or **Card**.
    - Cash: enter the amount received, and the change is shown.
-   - M-Pesa: enter the transaction code from the customer's message.
+   - M-Pesa, **payment prompt** (when the shop has set it up): type the customer's phone number
+     and press **Send payment prompt**. The customer gets an M-Pesa PIN request on their phone.
+     The till shows *Prompt sent* and turns green with *Paid* once they enter their PIN. If the
+     customer cancels or does not answer, the reason is shown and you can send the prompt again.
+     M-Pesa only takes whole shillings, so a total such as 194.50 is requested as 195.
+   - M-Pesa, **code**: if the customer already paid to the shop's till or paybill, choose *Enter
+     the M-Pesa code instead* and type the 10-character code from their SMS.
 5. Press **Complete sale**, then **Print receipt** if the customer wants one.
 
 If the system says there is not enough stock, the shelf count and the system disagree. Tell the

@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Banknote, CreditCard, Minus, Plus, Printer, ShoppingCart, Smartphone, Trash2, X } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { salesApi } from '@/api/sales';
-import type { PaymentMethod, Product, Sale } from '@/api/types';
+import type { MpesaPayment, PaymentMethod, Product, Sale } from '@/api/types';
 import { useAuth } from '@/auth/AuthProvider';
 import { PERM } from '@/auth/permissions';
 import { Alert } from '@/components/ui/Alert';
@@ -19,6 +19,8 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { parseError } from '@/lib/errors';
 import { formatKES, formatQty, num, WHOLE_UNITS } from '@/lib/format';
 import { priceCart } from '@/lib/pricing';
+
+import { MpesaPrompt, mpesaAmount } from './MpesaPrompt';
 
 interface CartLine {
   product: Product;
@@ -53,6 +55,10 @@ export function PosPage() {
   const [tendered, setTendered] = useState('');
   const [reference, setReference] = useState('');
   const [phone, setPhone] = useState('');
+  // M-Pesa: a payment prompt sent to the customer's phone, or the code typed in by hand.
+  const [mpesaPayment, setMpesaPayment] = useState<MpesaPayment | null>(null);
+  const [mpesaManual, setMpesaManual] = useState(false);
+  const onMpesaChange = useCallback((p: MpesaPayment | null) => setMpesaPayment(p), []);
   const [error, setError] = useState<string | null>(null);
   const [completed, setCompleted] = useState<Sale | null>(null);
   // One id per attempt: retries of the same checkout can never record two sales.
@@ -61,6 +67,7 @@ export function PosPage() {
   const store = useQuery({ queryKey: ['store'], queryFn: salesApi.store, staleTime: 10 * 60_000 });
   usePageTitle('Point of sale');
   const limit = num(store.data?.max_cashier_discount_percent ?? 10);
+  const stk = Boolean(store.data?.mpesa_stk_enabled) && !mpesaManual;
 
   const priced = useMemo(() => {
     const lines = cart.map((l) => ({ quantity: num(l.quantity), unitPrice: num(l.product.selling_price), vatRate: num(l.product.vat_rate) }));
@@ -98,6 +105,8 @@ export function PosPage() {
     setTendered('');
     setReference('');
     setPhone('');
+    setMpesaPayment(null);
+    setMpesaManual(false);
     setMethod('CASH');
     setError(null);
     requestId.current = newRequestId();
@@ -116,7 +125,10 @@ export function PosPage() {
     problems.every((p) => p === null) &&
     !overLimit &&
     (method !== 'CASH' || (change !== null && change >= 0)) &&
-    (method !== 'MPESA' || /^[A-Z0-9]{10}$/.test(reference.trim().toUpperCase()));
+    (method !== 'MPESA' ||
+      (stk
+        ? mpesaPayment?.status === 'SUCCESS' && mpesaPayment.amount >= mpesaAmount(priced.total)
+        : /^[A-Z0-9]{10}$/.test(reference.trim().toUpperCase())));
 
   const checkout = useMutation({
     mutationFn: () =>
@@ -126,7 +138,8 @@ export function PosPage() {
         cart_discount: priced.discountAmount > 0 ? priced.discountAmount.toFixed(2) : undefined,
         payment_method: method,
         amount_tendered: method === 'CASH' ? num(tendered).toFixed(2) : null,
-        payment_reference: method === 'CASH' ? null : reference.trim().toUpperCase() || null,
+        payment_reference: method === 'CASH' || (method === 'MPESA' && stk) ? null : reference.trim().toUpperCase() || null,
+        mpesa_payment_id: method === 'MPESA' && stk ? mpesaPayment?.id : null,
         customer_phone: phone.trim() || null,
       }),
     onSuccess: (sale) => {
@@ -274,12 +287,18 @@ export function PosPage() {
             )}
           </div>
         )}
-        {method === 'MPESA' && (
+        {method === 'MPESA' && stk && (
+          <MpesaPrompt total={priced.total} payment={mpesaPayment} onChange={onMpesaChange} onEnterCodeInstead={() => setMpesaManual(true)} />
+        )}
+        {method === 'MPESA' && !stk && (
           <div>
             <label htmlFor="pos-ref" className="mb-1.5 block text-sm font-medium text-gray-700">M-Pesa transaction code</label>
             <input id="pos-ref" value={reference} onChange={(e) => setReference(e.target.value.toUpperCase())} maxLength={10} placeholder="e.g. SKD4H2L9QX" autoCapitalize="characters"
               className="h-10 w-full rounded-lg border border-gray-300 px-3 font-mono text-sm uppercase focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30" />
             <p className="mt-1 text-xs text-gray-500">From the customer's confirmation SMS (10 letters and digits).</p>
+            {mpesaManual && store.data?.mpesa_stk_enabled && (
+              <button type="button" onClick={() => setMpesaManual(false)} className="mt-1 py-1 text-xs font-medium text-brand-700 hover:underline">Send a payment prompt to the customer's phone instead</button>
+            )}
           </div>
         )}
         {method === 'CARD' && (

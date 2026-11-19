@@ -336,6 +336,22 @@ export interface StoreInfo {
   receipt_footer: string;
   currency: string;
   max_cashier_discount_percent: Decimal;
+  /** True when the shop has Daraja credentials: the till can send M-Pesa payment prompts. */
+  mpesa_stk_enabled?: boolean;
+}
+
+export type MpesaStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'TIMEOUT';
+
+/** An M-Pesa payment prompt (STK push) sent to a customer's phone. */
+export interface MpesaPayment {
+  id: number;
+  status: MpesaStatus;
+  amount: number;
+  phone: string;
+  result_desc: string | null;
+  mpesa_receipt_number: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 export interface SaleReturn {

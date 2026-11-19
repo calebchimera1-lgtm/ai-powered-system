@@ -73,6 +73,24 @@ class Settings(BaseSettings):
     store_kra_pin: str = ""
     receipt_footer: str = "Thank you for shopping with us!"
 
+    # --- M-Pesa STK push (Safaricom Daraja "Lipa Na M-Pesa Online") ---------
+    # The till can send a payment prompt to the customer's phone. Off unless the four
+    # credentials below are set (from the Daraja portal: developer.safaricom.co.ke).
+    mpesa_environment: Literal["sandbox", "production"] = "sandbox"
+    mpesa_consumer_key: str = ""
+    mpesa_consumer_secret: str = ""
+    mpesa_shortcode: str = ""  # Business shortcode (paybill, or the store number for a till)
+    mpesa_passkey: str = ""
+    # CustomerPayBillOnline for a paybill; CustomerBuyGoodsOnline for a till (Buy Goods).
+    mpesa_transaction_type: Literal["CustomerPayBillOnline", "CustomerBuyGoodsOnline"] = (
+        "CustomerPayBillOnline"
+    )
+    mpesa_till_number: str = ""  # Buy Goods only: the till number money goes to (PartyB)
+    # Optional: public HTTPS address Safaricom can reach, plus a secret path token, for
+    # instant results by callback. Without them the app asks Safaricom for the result.
+    mpesa_callback_base_url: str = ""
+    mpesa_callback_token: str = ""
+
     # --- Worker ----------------------------------------------------------
     worker_poll_seconds: float = 2.0
     worker_max_attempts: int = 3
@@ -87,6 +105,17 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
+
+    @property
+    def mpesa_enabled(self) -> bool:
+        return all(
+            (
+                self.mpesa_consumer_key,
+                self.mpesa_consumer_secret,
+                self.mpesa_shortcode,
+                self.mpesa_passkey,
+            )
+        )
 
     @property
     def api_docs_enabled(self) -> bool:
@@ -114,6 +143,11 @@ def production_config_problems(settings: Settings) -> list[str]:
         or len(db_password) < 12
     ):
         problems.append("POSTGRES_PASSWORD must be changed to a random value of 12+ characters")
+    if settings.mpesa_callback_base_url:
+        if not settings.mpesa_callback_base_url.startswith("https://"):
+            problems.append("MPESA_CALLBACK_BASE_URL must start with https://")
+        if len(settings.mpesa_callback_token) < 24:
+            problems.append("MPESA_CALLBACK_TOKEN must be a random value of at least 24 characters")
     return problems
 
 

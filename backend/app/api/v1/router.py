@@ -14,6 +14,7 @@ from app.api.v1 import (
     invoices,
     media,
     notifications,
+    payments,
     products,
     purchasing,
     reports,
@@ -34,6 +35,7 @@ api_router.include_router(products.router)
 api_router.include_router(suppliers.router)
 api_router.include_router(stock.router)
 api_router.include_router(sales.router)
+api_router.include_router(payments.router)
 api_router.include_router(purchasing.router)
 api_router.include_router(finance.router)
 api_router.include_router(invoices.router)

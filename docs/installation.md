@@ -206,6 +206,39 @@ to the proxy. Ask Super Administrators and managers to turn on two-step sign-in
 
 These proxy set-ups are standard but were not part of this project's tests.
 
+## 6a. M-Pesa payment prompt (STK push), optional
+
+With this set up, the cashier types the customer's phone number and the customer gets an
+M-Pesa PIN prompt on their phone ("Lipa Na M-Pesa Online"). Without it, the till still
+accepts M-Pesa by the transaction code from the customer's SMS.
+
+1. Create an account on the Safaricom Daraja portal (developer.safaricom.co.ke) and an app
+   with *Lipa Na M-Pesa Sandbox*. The portal's test credentials page gives the sandbox
+   shortcode and passkey.
+2. In `.env`, set `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE` and
+   `MPESA_PASSKEY`, keep `MPESA_ENVIRONMENT=sandbox`, and restart the API:
+
+```bash
+docker compose up -d api
+```
+
+3. Test with a real Safaricom phone number on the sandbox: sell an item, choose M-Pesa,
+   send the prompt, and accept it on the phone (sandbox prompts do not take real money).
+4. To go live, apply for Lipa Na M-Pesa Online on Daraja for the shop's own paybill or
+   till. Then set `MPESA_ENVIRONMENT=production` and the production key, secret, shortcode
+   and passkey. For a till, also set `MPESA_TRANSACTION_TYPE=CustomerBuyGoodsOnline` and
+   `MPESA_TILL_NUMBER`.
+
+**Results.** By default the app asks Safaricom for the result every few seconds while the
+till waits, so no public address is needed. For instant results, make the shop reachable on
+HTTPS (section 6) and set `MPESA_CALLBACK_BASE_URL` (for example `https://shop.example.com`)
+and `MPESA_CALLBACK_TOKEN` (a random value of at least 24 characters). Safaricom then calls
+`/api/v1/payments/mpesa/callback/<token>`.
+
+**Safety.** A sale can be completed with a prompt only after Safaricom reports it as paid,
+for at least the sale total, and each payment can pay for one sale only. The keys stay on
+the server and are never sent to the browser.
+
 ## 7. Troubleshooting
 
 | Symptom | Likely cause and fix |

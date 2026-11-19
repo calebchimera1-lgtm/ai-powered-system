@@ -91,6 +91,7 @@ def store_info(_: CurrentUser) -> StoreInfo:
         receipt_footer=s.receipt_footer,
         currency=s.currency,
         max_cashier_discount_percent=s.max_cashier_discount_percent,
+        mpesa_stk_enabled=s.mpesa_enabled,
     )
 
 

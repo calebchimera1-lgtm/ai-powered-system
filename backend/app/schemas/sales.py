@@ -34,6 +34,9 @@ class CheckoutRequest(BaseModel):
     payment_method: Method
     amount_tendered: MoneyIn | None = None
     payment_reference: str | None = Field(None, max_length=40)
+    mpesa_payment_id: int | None = Field(
+        None, description="A completed M-Pesa prompt (STK push) that paid for this sale"
+    )
     customer_name: str | None = Field(None, max_length=150)
     customer_phone: str | None = Field(None, max_length=30)
     notes: str | None = Field(None, max_length=500)
@@ -58,7 +61,9 @@ class CheckoutRequest(BaseModel):
     def _payment(self) -> "CheckoutRequest":
         if self.payment_method == "CASH" and self.amount_tendered is None:
             raise ValueError("Enter the cash received")
-        if self.payment_method == "MPESA":
+        if self.payment_method != "MPESA" and self.mpesa_payment_id is not None:
+            raise ValueError("An M-Pesa payment can only be used with the M-Pesa method")
+        if self.payment_method == "MPESA" and self.mpesa_payment_id is None:
             if not self.payment_reference or not MPESA_RE.match(self.payment_reference):
                 raise ValueError("Enter the 10-character M-Pesa transaction code, e.g. SKD4H2L9QX")
         return self
@@ -128,6 +133,7 @@ class StoreInfo(BaseModel):
     receipt_footer: str
     currency: str
     max_cashier_discount_percent: Decimal
+    mpesa_stk_enabled: bool = False
 
 
 # --- Returns ----------------------------------------------------------------------

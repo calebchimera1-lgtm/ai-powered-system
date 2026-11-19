@@ -19,6 +19,7 @@ from app.models.base import Base
 from app.models.catalog import Category, Product, ProductBatch
 from app.models.finance import Expense, ExpenseCategory
 from app.models.invoice import Invoice, InvoiceItem, SupplierProductAlias
+from app.models.payments import MpesaPayment
 from app.models.procurement import Purchase, PurchaseItem, PurchaseOrder, PurchaseOrderItem
 from app.models.sales import Customer, Sale, SaleItem, SaleReturn, SaleReturnItem
 from app.models.stock import StockAdjustment, StockMovement
@@ -27,6 +28,7 @@ from app.models.system import AuditLog, BackgroundJob
 
 __all__ = [
     "AnomalyAlert",
+    "MpesaPayment",
     "Forecast",
     "ForecastRun",
     "Notification",

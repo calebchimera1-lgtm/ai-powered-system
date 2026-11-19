@@ -1,5 +1,5 @@
 import { api } from './client';
-import type { Page, PaymentMethod, Sale, SaleReturn, SalesSummary, StoreInfo } from './types';
+import type { MpesaPayment, Page, PaymentMethod, Sale, SaleReturn, SalesSummary, StoreInfo } from './types';
 
 function clean<T extends object>(params: T): Partial<T> {
   return Object.fromEntries(
@@ -14,6 +14,7 @@ export interface CheckoutInput {
   payment_method: PaymentMethod;
   amount_tendered?: string | null;
   payment_reference?: string | null;
+  mpesa_payment_id?: number | null;
   customer_name?: string | null;
   customer_phone?: string | null;
 }
@@ -31,6 +32,9 @@ export interface SalesQuery {
 export const salesApi = {
   store: () => api.get<StoreInfo>('/store').then((r) => r.data),
   checkout: (body: CheckoutInput) => api.post<Sale>('/sales', body).then((r) => r.data),
+  mpesaPrompt: (phone: string, amount: string) =>
+    api.post<MpesaPayment>('/payments/mpesa/stk-push', { phone, amount }).then((r) => r.data),
+  mpesaStatus: (id: number) => api.get<MpesaPayment>(`/payments/mpesa/${id}`).then((r) => r.data),
   list: (q: SalesQuery) => api.get<Page<Sale>>('/sales', { params: clean(q) }).then((r) => r.data),
   summary: (q: { date_from?: string; date_to?: string; cashier_id?: number }) =>
     api.get<SalesSummary>('/sales/summary', { params: clean(q) }).then((r) => r.data),

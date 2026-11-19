@@ -32,7 +32,7 @@ from app.models import (
 )
 from app.schemas.common import PageParams
 from app.schemas.sales import CheckoutRequest, ReturnCreate
-from app.services import audit_service, inventory_service, numbering
+from app.services import audit_service, inventory_service, mpesa_service, numbering
 from app.services.audit_service import RequestContext
 from app.services.inventory_service import fmt
 from app.services.pricing import LineInput, PricingError, price_cart, proportional_refund
@@ -111,6 +111,13 @@ def checkout(
             )
         change = (tendered - cart.grand_total).quantize(CENT)
 
+    mpesa = None
+    reference = data.payment_reference if data.payment_method != "CASH" else None
+    if data.mpesa_payment_id is not None:
+        # Locks the payment row: one M-Pesa payment can never pay for two sales.
+        mpesa = mpesa_service.claim_for_sale(db, data.mpesa_payment_id, cashier, cart.grand_total)
+        reference = mpesa_service.sale_reference(mpesa)
+
     customer = _customer(db, data.customer_name, data.customer_phone)
 
     sale = Sale(
@@ -124,7 +131,7 @@ def checkout(
         grand_total=cart.grand_total,
         cost_total=ZERO,
         payment_method=data.payment_method,
-        payment_reference=data.payment_reference if data.payment_method != "CASH" else None,
+        payment_reference=reference,
         amount_tendered=tendered,
         change_given=change,
         notes=(data.notes or "").strip() or None,
@@ -133,6 +140,8 @@ def checkout(
         sale.sold_at = sold_at
     db.add(sale)
     db.flush()
+    if mpesa is not None:
+        mpesa.sale_id = sale.id
 
     # Deduct stock in product-id order; keep the cart order for the receipt lines.
     order = sorted(range(len(data.items)), key=lambda i: data.items[i].product_id)

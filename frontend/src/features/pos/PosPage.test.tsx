@@ -11,14 +11,14 @@ import { makeProduct, makeUser, renderWithProviders } from '@/test/utils';
 import { newRequestId, PosPage } from './PosPage';
 
 vi.mock('@/api/catalog', () => ({ productsApi: { list: vi.fn(), lookup: vi.fn() } }));
-vi.mock('@/api/sales', () => ({ salesApi: { store: vi.fn(), checkout: vi.fn() } }));
+vi.mock('@/api/sales', () => ({ salesApi: { store: vi.fn(), checkout: vi.fn(), mpesaPrompt: vi.fn(), mpesaStatus: vi.fn() } }));
 
 const sugar = makeProduct({ id: 7, name: 'White Sugar 2kg', selling_price: '245.00', quantity_on_hand: '46.000' });
 const bread = makeProduct({ id: 8, name: 'White Bread 400g', selling_price: '70.00', barcode: '2000000000060', quantity_on_hand: '3.000' });
 
-function setup(role: RoleName = 'cashier') {
+function setup(role: RoleName = 'cashier', { stk = false } = {}) {
   vi.spyOn(client, 'refreshAccessToken').mockResolvedValue({ access_token: 't', token_type: 'bearer', expires_in: 900, user: makeUser(role) });
-  vi.mocked(salesApi.store).mockResolvedValue({ name: 'Demo Store', address: 'Nairobi', phone: '', kra_pin: '', receipt_footer: 'Thanks', currency: 'KES', max_cashier_discount_percent: '10' });
+  vi.mocked(salesApi.store).mockResolvedValue({ name: 'Demo Store', address: 'Nairobi', phone: '', kra_pin: '', receipt_footer: 'Thanks', currency: 'KES', max_cashier_discount_percent: '10', mpesa_stk_enabled: stk });
   vi.mocked(productsApi.list).mockResolvedValue({ items: [], total: 0, page: 1, page_size: 8, pages: 1 });
   vi.mocked(productsApi.lookup).mockImplementation(async (code) => {
     if (code === '2000000000015') return { match: 'barcode', product: sugar };
@@ -157,5 +157,52 @@ describe('scanner bursts', () => {
     resolvers.forEach((r) => r());
     await waitFor(() => expect(screen.getByLabelText('Quantity of White Sugar 2kg')).toHaveValue('2'));
     expect(productsApi.lookup).toHaveBeenNthCalledWith(2, '2000000000015');
+  });
+
+  describe('M-Pesa payment prompt (STK push)', () => {
+    const pending = { id: 41, status: 'PENDING' as const, amount: 245, phone: '254712***678', result_desc: 'Waiting', mpesa_receipt_number: null, created_at: '2026-11-19T10:00:00Z', completed_at: null };
+
+    it('sends the prompt, waits for payment, then completes the sale with it', async () => {
+      vi.mocked(salesApi.mpesaPrompt).mockResolvedValue(pending);
+      vi.mocked(salesApi.mpesaStatus).mockResolvedValue({ ...pending, status: 'SUCCESS', result_desc: 'Paid', mpesa_receipt_number: 'SKJ7RT61SV' });
+      vi.mocked(salesApi.checkout).mockRejectedValue(new Error('stop here'));
+      setup('cashier', { stk: true });
+      await scan('2000000000015');
+      await userEvent.click(screen.getByRole('radio', { name: 'M-Pesa' }));
+      const complete = screen.getByRole('button', { name: /complete sale/i });
+      expect(complete).toBeDisabled();
+      const send = screen.getByRole('button', { name: /send payment prompt · KES 245/i });
+      expect(send).toBeDisabled();
+      await userEvent.type(screen.getByLabelText("Customer's M-Pesa number"), '0712 345 678');
+      await userEvent.click(send);
+      expect(salesApi.mpesaPrompt).toHaveBeenCalledWith('0712345678', '245.00');
+      expect(await screen.findByText(/Paid KES 245/, {}, { timeout: 5000 })).toBeInTheDocument();
+      expect(screen.getByText(/SKJ7RT61SV/)).toBeInTheDocument();
+      await waitFor(() => expect(complete).toBeEnabled());
+      await userEvent.click(complete);
+      expect(salesApi.checkout).toHaveBeenCalledWith(expect.objectContaining({ payment_method: 'MPESA', mpesa_payment_id: 41, payment_reference: null }));
+    });
+
+    it('explains a cancelled prompt and keeps the sale blocked', async () => {
+      vi.mocked(salesApi.mpesaPrompt).mockResolvedValue(pending);
+      vi.mocked(salesApi.mpesaStatus).mockResolvedValue({ ...pending, status: 'CANCELLED', result_desc: 'The customer cancelled the prompt.' });
+      setup('cashier', { stk: true });
+      await scan('2000000000015');
+      await userEvent.click(screen.getByRole('radio', { name: 'M-Pesa' }));
+      await userEvent.type(screen.getByLabelText("Customer's M-Pesa number"), '0712345678');
+      await userEvent.click(screen.getByRole('button', { name: /send payment prompt/i }));
+      expect(await screen.findByText('The customer cancelled the prompt.', {}, { timeout: 5000 })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /send the prompt again/i })).toBeEnabled();
+      expect(screen.getByRole('button', { name: /complete sale/i })).toBeDisabled();
+    });
+
+    it('can fall back to typing the code from the SMS', async () => {
+      setup('cashier', { stk: true });
+      await scan('2000000000015');
+      await userEvent.click(screen.getByRole('radio', { name: 'M-Pesa' }));
+      await userEvent.click(screen.getByRole('button', { name: /enter the m-pesa code instead/i }));
+      await userEvent.type(screen.getByLabelText('M-Pesa transaction code'), 'SKD4H2L9QX');
+      expect(screen.getByRole('button', { name: /complete sale/i })).toBeEnabled();
+    });
   });
 });
