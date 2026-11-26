@@ -6,7 +6,7 @@ import { invoicesApi, type Invoice } from '@/api/invoices';
 import { useToast } from '@/components/ui/Toast';
 import { errorMessage } from '@/lib/errors';
 
-/** Where an approved invoice stands in the document archive (Paperless-ngx). */
+/** Where an approved invoice stands in the document archive. */
 export function ArchiveStatus({ inv, canRetry }: { inv: Invoice; canRetry: boolean }) {
   const qc = useQueryClient();
   const toast = useToast();

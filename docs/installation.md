@@ -239,9 +239,9 @@ and `MPESA_CALLBACK_TOKEN` (a random value of at least 24 characters). Safaricom
 for at least the sale total, and each payment can pay for one sale only. The keys stay on
 the server and are never sent to the browser.
 
-## 6b. Document archive (Paperless-ngx), optional
+## 6b. Document archive, optional
 
-[Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) (open source, GPL-3.0) keeps
+The document archive (open-source software, GPL-3.0, running on the same server) keeps
 every receipt, invoice, contract and tax document scanned, OCR-read, tagged and searchable.
 With it switched on:
 - every supplier invoice approved in Smart Inventory is **filed automatically**, under its
@@ -254,7 +254,8 @@ With it switched on:
   the `archive-inbox` folder. They are read, filed and removed from the folder. Files in a
   subfolder get that folder's name as a tag (for example `archive-inbox/contracts/`).
 
-It needs about 1–1.5 GB of extra memory.
+It appears to staff as **Smart Inventory Documents**, with the shop's logo. It needs about
+1–1.5 GB of extra memory.
 
 1. In `.env`, set `PAPERLESS_SECRET_KEY` (a random value of 32+ characters),
    `PAPERLESS_ADMIN_PASSWORD` (12+ characters) and `PAPERLESS_PUBLIC_URL`, the address staff
@@ -291,7 +292,7 @@ account for each member of staff who needs it (Settings → Users & Groups).
 worker also retries by itself. Each invoice is only ever filed once.
 
 **Backups.** The archive keeps its own data (Docker volumes `archive-data` and
-`archive-media`); Smart Inventory's backups do not include it. Use Paperless's exporter:
+`archive-media`); Smart Inventory's backups do not include it. Use the archive's exporter:
 
 ```bash
 docker compose --profile archive exec archive document_exporter ../export

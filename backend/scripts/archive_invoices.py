@@ -2,7 +2,7 @@
 
     python -m scripts.archive_invoices
 
-Use once after setting up Paperless-ngx, to file invoices approved before it existed.
+Use once after setting up the document archive, to file invoices approved before it existed.
 The worker then uploads them one by one; each invoice is filed only once.
 """
 

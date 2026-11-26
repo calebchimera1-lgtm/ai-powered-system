@@ -63,7 +63,7 @@ def process_invoice(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
 
 @handler("archive.invoice")
 def archive_invoice(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
-    """File an approved supplier invoice in the document archive (Paperless-ngx)."""
+    """File an approved supplier invoice in the document archive."""
     from app.services import archive_service
 
     return archive_service.archive_invoice(db, int(payload["invoice_id"]))

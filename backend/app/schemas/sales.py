@@ -134,7 +134,7 @@ class StoreInfo(BaseModel):
     currency: str
     max_cashier_discount_percent: Decimal
     mpesa_stk_enabled: bool = False
-    # Address of the document archive (Paperless-ngx) for the menu link, when set up.
+    # Address of the document archive for the menu link, when set up.
     document_archive_url: str | None = None
     assistant_enabled: bool = False
 

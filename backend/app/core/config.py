@@ -91,8 +91,8 @@ class Settings(BaseSettings):
     mpesa_callback_base_url: str = ""
     mpesa_callback_token: str = ""
 
-    # --- Document archive (Paperless-ngx), optional --------------------------
-    # Approved supplier invoices are filed in Paperless-ngx automatically: OCR'd, tagged by
+    # --- Document archive, optional --------------------------
+    # Approved supplier invoices are filed in the document archive automatically: OCR'd, tagged by
     # supplier, searchable. paperless_url is how the server reaches it (inside Docker:
     # http://archive:8000); paperless_public_url is the address staff open in the browser.
     paperless_url: str = ""

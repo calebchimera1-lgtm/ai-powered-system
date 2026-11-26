@@ -17,7 +17,7 @@ help:
 	@echo "make backups       List backups"
 	@echo "make restore NAME=<backup>   Restore a backup (stops the app; replaces data)"
 	@echo "make db-least-privilege   Move the app onto its own non-superuser database role"
-	@echo "make archive       Start the document archive (Paperless-ngx) on :8090"
+	@echo "make archive       Start the document archive on :8090"
 	@echo "make archive-token Create the API token that files approved invoices there"
 	@echo "make archive-backfill  File invoices approved before the archive existed"
 	@echo "make test          Run backend and frontend tests"
@@ -74,7 +74,7 @@ db-least-privilege:
 	$(COMPOSE) exec -T db sh /docker-entrypoint-initdb.d/10-app-role.sh
 	$(COMPOSE) up -d --force-recreate api worker
 
-# Document archive (Paperless-ngx). The first start takes a few minutes.
+# Document archive. The first start takes a few minutes.
 archive:
 	@grep -Eq '^PAPERLESS_SECRET_KEY=.{32,}' .env && grep -Eq '^PAPERLESS_ADMIN_PASSWORD=.{12,}' .env \
 	  && ! grep -Eq '^PAPERLESS_(SECRET_KEY|ADMIN_PASSWORD)=CHANGE_ME' .env \

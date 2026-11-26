@@ -1,11 +1,11 @@
-"""Files approved supplier invoices in the document archive (Paperless-ngx).
+"""Files approved supplier invoices in the document archive.
 
 On approval an "archive.invoice" job is queued. The worker uploads the original file with
-its title, date, supplier (as Paperless "correspondent"), document type and tags, then
-follows the Paperless consume task until the document exists, and stores its id so the
-invoice page can link to it. Paperless OCRs the file again for full-text search.
+its title, date, supplier (as the archive's "correspondent"), document type and tags, then
+follows the archive's consume task until the document exists, and stores its id so the
+invoice page can link to it. The archive OCRs the file again for full-text search.
 
-Each invoice is uploaded at most once: once a Paperless task id is stored, retries only
+Each invoice is uploaded at most once: once an archive task id is stored, retries only
 follow that task.
 """
 
@@ -35,7 +35,7 @@ class ArchiveError(Exception):
     """A problem talking to the archive; the message is safe to show to staff."""
 
 
-class PaperlessClient:
+class ArchiveClient:
     def __init__(
         self, settings: Settings | None = None, transport: httpx.BaseTransport | None = None
     ):
@@ -119,18 +119,18 @@ class PaperlessClient:
         return "pending", None, None
 
 
-_client: PaperlessClient | None = None
+_client: ArchiveClient | None = None
 
 
-def get_client() -> PaperlessClient:
+def get_client() -> ArchiveClient:
     global _client
     if _client is None:
-        _client = PaperlessClient()
+        _client = ArchiveClient()
     return _client
 
 
-def set_client(client: PaperlessClient | None) -> None:
-    """Used by tests to plug in a client with a fake Paperless transport."""
+def set_client(client: ArchiveClient | None) -> None:
+    """Used by tests to plug in a client with a fake archive transport."""
     global _client
     _client = client
 

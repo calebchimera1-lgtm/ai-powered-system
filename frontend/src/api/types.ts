@@ -338,7 +338,7 @@ export interface StoreInfo {
   max_cashier_discount_percent: Decimal;
   /** True when the shop has Daraja credentials: the till can send M-Pesa payment prompts. */
   mpesa_stk_enabled?: boolean;
-  /** Address of the document archive (Paperless-ngx), when set up. */
+  /** Address of the document archive, when set up. */
   document_archive_url?: string | null;
   /** True when the server has a Claude API key: the AI assistant and AI invoice reading work. */
   assistant_enabled?: boolean;

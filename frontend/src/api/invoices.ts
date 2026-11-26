@@ -73,7 +73,7 @@ export interface Invoice {
   reviewed_at: string | null;
   review_note: string | null;
   purchase_id: number | null;
-  /** Document archive (Paperless-ngx): QUEUED, ARCHIVED or FAILED; null when not used. */
+  /** Document archive: QUEUED, ARCHIVED or FAILED; null when not used. */
   archive_status?: 'QUEUED' | 'ARCHIVED' | 'FAILED' | null;
   archive_error?: string | null;
   archive_document_id?: number | null;

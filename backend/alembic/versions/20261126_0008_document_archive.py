@@ -1,4 +1,4 @@
-"""Filing approved invoices in the document archive (Paperless-ngx).
+"""Filing approved invoices in the document archive.
 
 Adds five nullable columns to invoices; existing rows are untouched.
 

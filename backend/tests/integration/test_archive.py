@@ -1,8 +1,8 @@
-"""Filing approved invoices in the document archive (Paperless-ngx).
+"""Filing approved invoices in the document archive.
 
-Paperless is replaced by a fake that follows the API of Paperless-ngx 3.5.1 as observed
+The archive is replaced by a fake that follows the API of the archive server (3.5.1) as observed
 against the real server (post_document returns a task id; /api/tasks/ is paginated and
-reports result_data.document_id). The same flow was also run against a real Paperless-ngx
+reports result_data.document_id). The same flow was also run against a real archive server
 3.5.1 container by hand (see docs/installation.md, section 6b).
 """
 
@@ -21,7 +21,7 @@ from app.services import archive_service
 from tests.integration.test_invoices_api import docs, env, process_all, upload  # noqa: F401
 
 
-class FakePaperless:
+class FakeArchive:
     def __init__(self) -> None:
         self.objects: dict[str, list[dict]] = {
             "correspondents": [],
@@ -87,9 +87,9 @@ def paperless(monkeypatch):  # type: ignore[no-untyped-def]
     monkeypatch.setattr(s, "paperless_url", "http://archive:8000")
     monkeypatch.setattr(s, "paperless_token", "pl-token")
     monkeypatch.setattr(s, "paperless_public_url", "http://localhost:8090")
-    fake = FakePaperless()
+    fake = FakeArchive()
     archive_service.set_client(
-        archive_service.PaperlessClient(s, transport=httpx.MockTransport(fake.handler))
+        archive_service.ArchiveClient(s, transport=httpx.MockTransport(fake.handler))
     )
     yield fake
     archive_service.set_client(None)

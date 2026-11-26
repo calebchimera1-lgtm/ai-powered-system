@@ -25,7 +25,7 @@ function Brand({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-/** Link to the document archive (Paperless-ngx), when the shop has set it up. */
+/** Link to the document archive, when the shop has set it up. */
 function ArchiveLink() {
   const { canAny } = useAuth();
   const store = useQuery({ queryKey: ['store'], queryFn: salesApi.store, staleTime: 10 * 60_000, retry: false });

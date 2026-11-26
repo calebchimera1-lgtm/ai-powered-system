@@ -79,7 +79,7 @@ class InvoiceOut(ORMModel):
     reviewed_at: datetime | None
     review_note: str | None
     purchase_id: int | None
-    # Document archive (Paperless-ngx)
+    # Document archive
     archive_status: str | None = None
     archive_error: str | None = None
     archive_document_id: int | None = None

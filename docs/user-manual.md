@@ -260,7 +260,7 @@ You can do everything above, plus:
 
 ### Document archive: Documents → Document archive
 
-When the shop has the document archive (Paperless-ngx), approved supplier invoices are filed
+When the shop has the document archive, approved supplier invoices are filed
 there automatically. The invoice page shows **Filed in the document archive**; click it to
 open the filed copy. Other papers (contracts, tax documents, utility bills, receipts) can be
 uploaded in the archive itself or scanned into the shared `archive-inbox` folder. The archive

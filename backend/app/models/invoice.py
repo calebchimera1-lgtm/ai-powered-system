@@ -58,7 +58,7 @@ class Invoice(IdMixin, TimestampMixin, Base):
     )
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="QUEUED")
 
-    # Filing in the document archive (Paperless-ngx), when it is set up.
+    # Filing in the document archive, when it is set up.
     archive_status: Mapped[str | None] = mapped_column(String(10))  # QUEUED/ARCHIVED/FAILED
     archive_task_id: Mapped[str | None] = mapped_column(String(64))
     archive_document_id: Mapped[int | None] = mapped_column(Integer)
