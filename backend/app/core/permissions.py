@@ -57,6 +57,9 @@ class P(StrEnum):
     ANOMALIES_READ = "anomalies:read"
     ANOMALIES_REVIEW = "anomalies:review"
 
+    # AI accounting assistant (what it can look up still follows the permissions above)
+    ASSISTANT_USE = "assistant:use"
+
     # Reports
     REPORTS_ALL = "reports:all"
     REPORTS_INVENTORY = "reports:inventory"
@@ -97,6 +100,7 @@ PERMISSION_DESCRIPTIONS: dict[P, str] = {
     P.FORECASTS_READ: "View demand forecasts and reorder recommendations",
     P.ANOMALIES_READ: "View inventory anomaly alerts",
     P.ANOMALIES_REVIEW: "Investigate and close anomaly alerts",
+    P.ASSISTANT_USE: "Ask the AI accounting assistant and scan receipts with it",
     P.REPORTS_ALL: "Export all reports",
     P.REPORTS_INVENTORY: "Export inventory reports",
     P.REPORTS_OWN_SALES: "Export own daily sales report",
@@ -153,6 +157,7 @@ ROLE_PERMISSIONS: dict[RoleName, frozenset[P]] = {
             P.FORECASTS_READ,
             P.REPORTS_INVENTORY,
             P.DASHBOARD_READ,  # stock and forecast panels; money figures need FINANCE_READ
+            P.ASSISTANT_USE,
         }
     ),
     RoleName.CASHIER: frozenset(
@@ -162,6 +167,7 @@ ROLE_PERMISSIONS: dict[RoleName, frozenset[P]] = {
             P.SALES_READ_OWN,
             P.RETURNS_REQUEST,
             P.REPORTS_OWN_SALES,
+            P.ASSISTANT_USE,
         }
     ),
 }

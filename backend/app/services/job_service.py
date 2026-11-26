@@ -86,3 +86,69 @@ def requeue_stale(db: Session, older_than_minutes: int = 15) -> int:
     for job in jobs:
         mark_failed(job, "worker stopped before finishing (requeued)")
     return len(jobs)
+
+
+# --- Worker heartbeat ------------------------------------------------------------------
+# The worker touches a small file in the shared storage folder on every loop. If it has
+# not done so for a while, the API knows nobody is processing jobs (for example when only
+# the API was started from an editor) and can run urgent jobs itself.
+
+HEARTBEAT_FILE = ".worker-heartbeat"
+HEARTBEAT_STALE_SECONDS = 60
+
+
+def touch_heartbeat() -> None:
+    path = get_settings().storage_dir / HEARTBEAT_FILE
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    except OSError:
+        pass
+
+
+def worker_alive() -> bool:
+    path = get_settings().storage_dir / HEARTBEAT_FILE
+    try:
+        age = datetime.now(UTC).timestamp() - path.stat().st_mtime
+    except OSError:
+        return False
+    return age < HEARTBEAT_STALE_SECONDS
+
+
+def run_now(job_id: int) -> bool:
+    """Run one specific pending job in this process (used when no worker is alive).
+    Safe alongside a worker: the row lock means only one of them can claim it."""
+    import traceback
+
+    from app.core.database import SessionLocal
+    from app.workers.handlers import HANDLERS
+
+    with SessionLocal() as db:
+        job = db.scalar(
+            select(BackgroundJob)
+            .where(BackgroundJob.id == job_id, BackgroundJob.status == "PENDING")
+            .with_for_update(skip_locked=True)
+        )
+        if job is None:
+            return False
+        job.status, job.locked_at = "RUNNING", datetime.now(UTC)
+        job.attempts += 1
+        db.commit()
+        job_type, payload = job.job_type, dict(job.payload)
+    with SessionLocal() as db:
+        try:
+            result = HANDLERS[job_type](db, payload)
+            db.commit()
+            ok, out = True, result
+        except Exception:
+            db.rollback()
+            ok, out = False, traceback.format_exc()
+    with SessionLocal() as db:
+        job = db.get(BackgroundJob, job_id)
+        if job is not None:
+            if ok:
+                mark_succeeded(job, out)  # type: ignore[arg-type]
+            else:
+                mark_failed(job, str(out))
+            db.commit()
+    return ok

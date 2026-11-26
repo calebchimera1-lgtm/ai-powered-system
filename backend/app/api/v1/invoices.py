@@ -6,7 +6,7 @@ staff with invoice permissions (fetched with the Authorization header, not publi
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, File, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Query, UploadFile, status
 from fastapi.responses import FileResponse
 
 from app.api.deps import Ctx, DbSession, Pagination, limit_per_user, require
@@ -22,7 +22,7 @@ from app.schemas.invoices import (
     InvoiceStats,
     InvoiceSummary,
 )
-from app.services import archive_service, invoice_service
+from app.services import archive_service, invoice_service, job_service
 
 router = APIRouter(prefix="/invoices", tags=["Invoice digitization"])
 
@@ -50,12 +50,20 @@ async def upload(
     user: Uploader,
     db: DbSession,
     ctx: Ctx,
+    background: BackgroundTasks,
     file: Annotated[UploadFile, File(description="Photo (JPEG/PNG/WebP) or PDF, max 10 MB")],
 ) -> InvoiceOut:
     """Upload a supplier invoice. It is read in the background; poll until NEEDS_REVIEW."""
     data = await file.read(invoice_service.MAX_BYTES + 1)
     inv = invoice_service.upload(db, data, file.filename or "", user, ctx)
+    _run_inline_if_no_worker(db, background, inv.id)
     return InvoiceOut.model_validate(inv)
+
+
+def _run_inline_if_no_worker(db: DbSession, background: BackgroundTasks, invoice_id: int) -> None:
+    job_id = invoice_service.job_to_run_inline(db, invoice_id)
+    if job_id is not None:
+        background.add_task(job_service.run_now, job_id)
 
 
 @router.get("", response_model=Page[InvoiceSummary])
@@ -141,7 +149,10 @@ def reject(
 @router.post(
     "/{invoice_id}/reprocess", response_model=InvoiceOut, dependencies=[Depends(ocr_limit)]
 )
-def reprocess(invoice_id: int, user: Uploader, db: DbSession, ctx: Ctx) -> InvoiceOut:
+def reprocess(
+    invoice_id: int, user: Uploader, db: DbSession, ctx: Ctx, background: BackgroundTasks
+) -> InvoiceOut:
     """Read the document again (e.g. after adding the supplier or products)."""
-    inv = invoice_service.get(db, invoice_id)
-    return InvoiceOut.model_validate(invoice_service.reprocess(db, inv, user, ctx))
+    inv = invoice_service.reprocess(db, invoice_service.get(db, invoice_id), user, ctx)
+    _run_inline_if_no_worker(db, background, inv.id)
+    return InvoiceOut.model_validate(inv)

@@ -1,10 +1,11 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { Camera, FileUp, ScanLine } from 'lucide-react';
+import { Camera, FileUp, ScanLine, Sparkles } from 'lucide-react';
 import { useRef, useState, type DragEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { invoicesApi, type InvoiceSummary } from '@/api/invoices';
+import { salesApi } from '@/api/sales';
 import { useAuth } from '@/auth/AuthProvider';
 import { PERM } from '@/auth/permissions';
 import { Alert } from '@/components/ui/Alert';
@@ -56,6 +57,7 @@ export function InvoicesPage() {
     refetchInterval: (q) => (q.state.data?.items.some((i) => isWorking(i.status)) ? 2000 : false),
   });
   const stats = useQuery({ queryKey: ['invoices', 'stats'], queryFn: invoicesApi.stats });
+  const store = useQuery({ queryKey: ['store'], queryFn: salesApi.store, staleTime: 10 * 60_000, retry: false });
 
   const send = async (file: File | undefined) => {
     if (!file) return;
@@ -126,6 +128,11 @@ export function InvoicesPage() {
           <ScanLine className="mx-auto h-10 w-10 text-brand-600" aria-hidden />
           <p className="mt-2 text-sm font-medium text-gray-900">Drop an invoice here, take a photo or choose a file</p>
           <p className="mt-1 text-xs text-gray-500">JPEG, PNG, WebP or PDF up to {MAX_MB} MB. Lay the invoice flat, in good light, with all four corners showing.</p>
+          {store.data?.assistant_enabled && (
+            <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-xs font-medium text-brand-800">
+              <Sparkles className="h-3.5 w-3.5" aria-hidden />Read by AI (Claude vision) · questions? <Link to="/assistant" className="underline">Ask the AI assistant</Link>
+            </p>
+          )}
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Button icon={<Camera className="h-4 w-4" />} onClick={() => cameraRef.current?.click()} loading={progress !== null} className="sm:hidden">Take photo</Button>
             <Button variant="secondary" icon={<FileUp className="h-4 w-4" />} onClick={() => fileRef.current?.click()} loading={progress !== null}>Choose file</Button>

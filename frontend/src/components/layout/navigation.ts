@@ -1,6 +1,7 @@
 import {
   ArrowLeftRight,
   Bell,
+  Bot,
   DatabaseBackup,
   FileBarChart,
   ShieldAlert,
@@ -44,7 +45,10 @@ export interface NavSection {
 export const NAV_SECTIONS: NavSection[] = [
   {
     title: 'Overview',
-    items: [{ to: '/', label: 'Home', icon: Home, anyOf: [] }],
+    items: [
+      { to: '/', label: 'Home', icon: Home, anyOf: [] },
+      { to: '/assistant', label: 'AI assistant', icon: Bot, anyOf: [PERM.ASSISTANT_USE] },
+    ],
   },
   {
     title: 'Sales',

@@ -20,11 +20,13 @@ from PIL import Image, UnidentifiedImageError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.ai.ocr import engines, matcher, validator
+from app.ai.claude import AIUnavailable
+from app.ai.ocr import claude_reader, engines, matcher, validator
 from app.ai.ocr.pipeline import process as run_pipeline
 from app.core.config import get_settings
 from app.core.exceptions import ConflictError, NotFoundError, ValidationFailed
 from app.models import (
+    BackgroundJob,
     Invoice,
     InvoiceItem,
     Product,
@@ -144,6 +146,23 @@ def upload(db: Session, data: bytes, filename: str, user: User, ctx: RequestCont
 # --- Processing (runs in the worker) -----------------------------------------------
 
 
+def job_to_run_inline(db: Session, invoice_id: int) -> int | None:
+    """The pending reading job for this invoice when no worker is running to pick it up.
+    The API then runs it after sending its response, so scanning still works."""
+    if not get_settings().worker_inline_fallback or job_service.worker_alive():
+        return None
+    return db.scalar(
+        select(BackgroundJob.id)
+        .where(
+            BackgroundJob.job_type == JOB,
+            BackgroundJob.status == "PENDING",
+            BackgroundJob.payload["invoice_id"].as_integer() == invoice_id,
+        )
+        .order_by(BackgroundJob.id.desc())
+        .limit(1)
+    )
+
+
 def _catalog(db: Session) -> tuple[list[matcher.ProductRef], list[matcher.SupplierRef]]:
     products = [
         matcher.ProductRef(p.id, p.name, p.sku, p.barcode)
@@ -185,6 +204,30 @@ def _jsonable(v: Any) -> Any:
     return v
 
 
+def read(data: bytes, mime: str) -> tuple[Any, Any]:
+    """AI reading (Claude vision) when it is set up, else Tesseract OCR. If the AI cannot
+    answer, Tesseract reads the document instead and the reason is kept in the steps."""
+    if get_settings().ai_invoice_reader_enabled:
+        try:
+            return claude_reader.read(data, mime)
+        except (AIUnavailable, ValueError) as exc:
+            logger.warning("AI invoice reading unavailable, using Tesseract: %s", exc)
+            doc, ext = run_pipeline(data, mime)
+            doc.steps.insert(0, f"AI reading was not available ({exc}); read with Tesseract")
+            return doc, ext
+    return run_pipeline(data, mime)
+
+
+def _failure_reason(exc: Exception) -> str:
+    if exc.__class__.__name__ == "TesseractNotFoundError":
+        return (
+            "The OCR program (Tesseract) is not installed on this server. Run the app with "
+            "Docker (docker compose up), install Tesseract, or set ANTHROPIC_API_KEY so the "
+            "AI reads invoices. You can also enter this invoice by hand."
+        )
+    return f"The document could not be read ({exc.__class__.__name__})."
+
+
 def process(db: Session, invoice_id: int) -> dict[str, Any]:
     """OCR + extraction + matching + checks. Never raises for a bad document: the invoice
     is marked FAILED with a reason so a person can enter it by hand."""
@@ -195,11 +238,11 @@ def process(db: Session, invoice_id: int) -> dict[str, Any]:
     db.commit()
     try:
         data = (get_settings().storage_dir / inv.file_path).read_bytes()
-        doc, ext = run_pipeline(data, inv.mime_type)
+        doc, ext = read(data, inv.mime_type)
     except Exception as exc:
         logger.exception("Invoice %s could not be processed", invoice_id)
         inv.status = "FAILED"
-        inv.error_message = f"The document could not be read ({exc.__class__.__name__})."
+        inv.error_message = _failure_reason(exc)
         db.commit()
         return {"status": "FAILED"}
 
@@ -409,8 +452,7 @@ def get(db: Session, invoice_id: int) -> Invoice:
 def _editable(inv: Invoice) -> None:
     if inv.status not in ("NEEDS_REVIEW", "FAILED"):
         raise ValidationFailed(
-            f"This invoice is {inv.status.lower().replace('_', ' ')} and can no "
-            "longer be edited."
+            f"This invoice is {inv.status.lower().replace('_', ' ')} and can no longer be edited."
         )
 
 

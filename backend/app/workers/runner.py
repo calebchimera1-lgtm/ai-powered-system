@@ -104,6 +104,7 @@ class Worker:
         logger.info("Worker started at %s", datetime.now(UTC).isoformat())
         while self.running:
             try:
+                job_service.touch_heartbeat()
                 self.schedule_periodic()
                 if not self.run_once():
                     time.sleep(self.settings.worker_poll_seconds)

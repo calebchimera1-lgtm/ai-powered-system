@@ -25,7 +25,9 @@ COPY scripts ./scripts
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Run as an unprivileged user; storage is the only writable location.
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+# sed: a Windows checkout may have turned the script's line endings into CRLF.
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh \
     && useradd --create-home --uid 10001 appuser \
     && mkdir -p /app/storage \
     && chown -R appuser:appuser /app/storage

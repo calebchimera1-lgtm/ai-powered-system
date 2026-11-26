@@ -50,6 +50,7 @@ const BackupsPage = page(() => import('@/features/admin/BackupsPage'), 'BackupsP
 const ReportsPage = page(() => import('@/features/reports/ReportsPage'), 'ReportsPage');
 const NotificationsPage = page(() => import('@/features/notifications/NotificationsPage'), 'NotificationsPage');
 const InvoiceReviewPage = page(() => import('@/features/invoices/InvoiceReviewPage'), 'InvoiceReviewPage');
+const AssistantPage = page(() => import('@/features/assistant/AssistantPage'), 'AssistantPage');
 const InvoicesPage = page(() => import('@/features/invoices/InvoicesPage'), 'InvoicesPage');
 const GoodsReceivedDetailPage = page(() => import('@/features/purchasing/GoodsReceivedDetailPage'), 'GoodsReceivedDetailPage');
 const GoodsReceivedPage = page(() => import('@/features/purchasing/GoodsReceivedPage'), 'GoodsReceivedPage');
@@ -80,6 +81,7 @@ export function AppRoutes() {
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route element={<AppShell />}>
           <Route index element={<HomePage />} />
+          <Route path="/assistant" element={<Guard perms={[PERM.ASSISTANT_USE]}><AssistantPage /></Guard>} />
           <Route path="/pos" element={<Guard perms={[PERM.SALES_CREATE]}><PosPage /></Guard>} />
           <Route path="/sales" element={<Guard perms={[PERM.SALES_READ_OWN, PERM.SALES_READ_ALL]}><SalesPage /></Guard>} />
           <Route path="/sales/:id" element={<Guard perms={[PERM.SALES_READ_OWN, PERM.SALES_READ_ALL]}><SaleDetailPage /></Guard>} />

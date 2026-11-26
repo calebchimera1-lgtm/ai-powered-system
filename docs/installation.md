@@ -297,6 +297,48 @@ worker also retries by itself. Each invoice is only ever filed once.
 docker compose --profile archive exec archive document_exporter ../export
 ```
 
+## 6c. AI accounting assistant and AI invoice reading (Claude), optional
+
+With a Claude API key the system gets:
+- **AI assistant** (menu: Overview → AI assistant). Staff ask in plain English or Kiswahili:
+  *"How much profit did we make this month?"*, *"Which products are running low?"*,
+  *"Record KES 3,500 for transport today, paid by M-Pesa"*. Answers come only from the shop's
+  own records, and each person's assistant can see only what their role allows (a cashier's
+  assistant cannot see profit figures). Staff can attach a photo or PDF of a receipt or
+  invoice: the assistant reads it, explains it, and prepares an expense or sends the invoice
+  to *Scan invoices*. **Nothing is saved until a person presses Confirm.**
+- **AI invoice reading.** Photos uploaded under *Purchasing → Scan invoices* are read with
+  Claude vision, which copes much better with phone photos than plain OCR. If the AI cannot
+  answer (no internet, no credit), Tesseract OCR reads the invoice instead, as before.
+- **A complete log.** Every question, answer, attached file, record the AI looked at,
+  proposal and confirmation is stored. Users with the audit permission can read everyone's
+  conversations (AI assistant → *All staff*); proposals and confirmations also appear in
+  the audit log.
+
+1. Create an API key at <https://console.anthropic.com> (Settings → API keys) and add credit
+   under Billing. Each question costs a small amount of credit.
+2. Put it in `.env` (it is used only by the server and never sent to browsers):
+
+```bash
+ANTHROPIC_API_KEY=your-key-here
+```
+
+3. Restart the app:
+
+```bash
+docker compose up -d api worker
+```
+
+Optional settings: `ASSISTANT_MODEL` (default `claude-opus-5-5`), `ASSISTANT_EFFORT` (`low`,
+`medium` (default), `high`), and `AI_INVOICE_READING=false` to keep reading invoices with
+Tesseract only. Requests use Claude's server-side fallbacks: if the model declines a request,
+Anthropic's fallback model answers it in the same call. Without a key, both features stay off
+and the assistant page explains how to switch them on.
+
+Privacy: questions, attached files and the figures the assistant looks up are sent to the
+Claude API (Anthropic) to produce the answer. The records themselves stay in the shop's
+database. Do not enable it if your data policy does not allow this.
+
 ## 7. Troubleshooting
 
 | Symptom | Likely cause and fix |
@@ -305,7 +347,11 @@ docker compose --profile archive exec archive document_exporter ../export
 | `Set POSTGRES_PASSWORD in .env` | `.env` is missing or incomplete: step 2 |
 | The build fails at `apt-get` or `pip install` | No internet access, or a proxy that Docker does not know about. Configure Docker's proxy settings and retry |
 | The page loads but sign-in fails with "Cannot reach the server" | `api` is not healthy yet (it waits for the database and applies migrations): `docker compose logs api` |
-| Invoices stay "Waiting to be read" | The worker is not running: `docker compose ps`, `docker compose logs worker` |
+| Invoices stay "Waiting to be read" | The worker is not running: `docker compose ps`, `docker compose logs worker`. If only the API runs (for example started from an editor), the API now reads invoices itself after a minute without a worker |
+| `worker` or `api` keeps restarting with `exec ./docker-entrypoint.sh: no such file or directory` (Windows) | The script got Windows line endings. Pull the latest code (it includes `.gitattributes`), then `docker compose build --no-cache api` and `docker compose up -d` |
+| A scanned invoice shows "Tesseract is not installed" | You are running the backend outside Docker: install Tesseract (`apt install tesseract-ocr`, or the Windows installer), or set `ANTHROPIC_API_KEY` so the AI reads invoices |
+| "Take photo" does not open the camera | Phones only show the camera for pages opened over HTTPS or `localhost`. On a laptop the button opens the file picker; take the photo with the phone instead |
+| The AI assistant says the key was refused or there is no credit | Check `ANTHROPIC_API_KEY` in `.env` and the credit at console.anthropic.com → Billing, then `docker compose up -d api worker` |
 | Forecast says "low confidence" | Fewer than 8 weeks of sales recorded for that product; it improves with time |
 | Out of memory on a 4 GB machine | Close other programs; the containers have memory limits that total about 1.7 GB |
 

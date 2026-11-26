@@ -54,5 +54,6 @@ def test_cashier_is_minimal() -> None:
         P.SALES_READ_OWN,
         P.RETURNS_REQUEST,
         P.REPORTS_OWN_SALES,
+        P.ASSISTANT_USE,  # the assistant only gets the tools these permissions allow
     }
     assert P.PRODUCTS_VIEW_COST not in perms(RoleName.CASHIER)

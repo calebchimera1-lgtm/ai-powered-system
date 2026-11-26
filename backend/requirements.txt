@@ -12,6 +12,8 @@ argon2-cffi==23.1.0
 python-multipart==0.0.33
 # Safaricom Daraja API calls (M-Pesa STK push)
 httpx==0.28.1
+# Claude API: AI accounting assistant and AI invoice reading (optional; needs a key)
+anthropic==1.17.0
 pillow==13.0.0
 python-barcode==0.15.1
 # Phase 4: invoice digitization (OCR runs on CPU; no GPU needed)

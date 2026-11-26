@@ -38,6 +38,21 @@ your phone? Ask the Super Admin to reset it.
 
 Numbers are in Kenyan shillings (KES). Shelf prices include VAT.
 
+**AI assistant (Overview → AI assistant).** When the shop has switched it on, ask questions
+in plain English or Kiswahili, for example *"How much did we sell today?"*, *"Ni bidhaa gani
+zinakaribia kuisha?"* or *"Record KES 3,500 for transport, paid by M-Pesa"*. You can also
+press the paper-clip (or the camera on a phone) to attach a photo or PDF of a receipt or a
+supplier invoice: the assistant reads it, tells you what it found and anything that does not
+add up, and prepares the entry.
+- The assistant only sees what your account may see.
+- It never saves anything by itself: check the card under its answer and press **Confirm**
+  (or **Cancel**). A confirmed expense appears under Finance → Expenses; a confirmed supplier
+  invoice opens in Purchasing → Scan invoices for the usual review and approval.
+- Under each answer, **Records checked** lists what it looked up.
+- The AI can make mistakes. Check figures before you confirm.
+- Conversations are kept as part of the shop's records, and managers with audit access can
+  read them.
+
 ---
 
 ## Cashier
@@ -97,7 +112,9 @@ You can receive a delivery in two ways.
 **A. Scan the supplier's invoice (recommended): Purchasing → Scan invoices**
 1. **Take photo** (on a phone) or **Choose file** (a photo or PDF, up to 10 MB). Lay the invoice
    flat, in good light, with all four corners showing.
-2. Wait a few seconds while it is read.
+2. Wait a few seconds while it is read. When the shop has the AI switched on, the invoice
+   is read by AI (Claude vision), which handles creased or tilted phone photos well;
+   otherwise the built-in OCR reads it.
 3. **Check it against the paper**, field by field. Fields the system was unsure about are
    highlighted. For each line:
    - "Suggested" means the system guessed the product from its name. Press **Confirm** if it is

@@ -50,6 +50,15 @@ export function InvoiceReviewPage() {
             <Spinner label="" />
             <p className="font-medium text-gray-900">{STATUS_LABEL[inv.status]}</p>
             <p className="max-w-sm text-sm text-gray-500">Straightening the photo, reading the text and matching products. This usually takes a few seconds.</p>
+            {inv.status === 'QUEUED' && Date.now() - new Date(inv.created_at).getTime() > 90_000 && (
+              <div className="max-w-md text-left">
+                <Alert tone="warning">
+                  This invoice has been waiting for over a minute. The background worker that reads
+                  invoices may not be running: start the whole app with <code>docker compose up -d</code>
+                  (or <code>python -m app.workers.runner</code> when running the backend by hand).
+                </Alert>
+              </div>
+            )}
           </div>
         </Card>
       ) : (

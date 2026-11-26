@@ -136,6 +136,7 @@ class StoreInfo(BaseModel):
     mpesa_stk_enabled: bool = False
     # Address of the document archive (Paperless-ngx) for the menu link, when set up.
     document_archive_url: str | None = None
+    assistant_enabled: bool = False
 
 
 # --- Returns ----------------------------------------------------------------------

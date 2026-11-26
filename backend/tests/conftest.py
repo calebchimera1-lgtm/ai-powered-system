@@ -16,6 +16,9 @@ os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 os.environ["ENVIRONMENT"] = "test"
 os.environ["JWT_SECRET"] = "test-secret-key-for-unit-tests-only"
 os.environ["FRONTEND_URL"] = "http://frontend.test"
+# Tests run the worker explicitly; the API must not also read invoices in-process.
+os.environ["WORKER_INLINE_FALLBACK"] = "false"
+os.environ["ANTHROPIC_API_KEY"] = ""
 os.environ["STORAGE_DIR"] = __import__("tempfile").mkdtemp(prefix="inventory-test-storage-")
 
 import pytest

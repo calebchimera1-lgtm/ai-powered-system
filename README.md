@@ -24,6 +24,7 @@ An inventory platform for supermarkets: inventory, POS, procurement, AI receipt/
 | 4. AI receipt digitization | Invoice photo/scan/PDF upload, OpenCV clean-up (perspective, deskew, binarise), Tesseract OCR, field and line extraction checked by arithmetic, product matching that learns supplier names, side-by-side human review, approval into stock as a goods-received note, honest accuracy evaluation | **Done** |
 | 5. Forecasting & anomalies | Per-product demand forecasts (six models compared by backtest), stock-out dates, reorder points and draft purchase orders, irregularity detection (rules + Isolation Forest) with a review workflow, in-app notifications (low stock, expiry, approvals, predicted shortages, irregularities) | **Done** |
 | 6. Dashboard, reports & finalization | Management dashboard with date and category filters, 10 reports in PDF/Excel/CSV, nightly verified backups with tested restore, end-to-end test of the demonstration scenario, full documentation | **Done** |
+| Add-on: AI accounting assistant | Chat assistant (Claude API with tool use) that answers from the shop's own books (income statement, daily sales, best sellers, expenses, stock, invoices, audit log) within each user's permissions, reads attached receipts and invoices, prepares expenses and invoice uploads that a person confirms, and logs every conversation; optional Claude vision reading of scanned invoices with Tesseract as fallback. Needs `ANTHROPIC_API_KEY` ([installation guide, 6c](docs/installation.md)) | **Done** |
 
 ## Quick start (Docker)
 
@@ -162,7 +163,7 @@ Method, limits and full tables: [docs/ai/forecasting-and-anomalies.md](docs/ai/f
 
 ## How invoice scanning works
 
-Purchasing → **Scan invoices**. Photograph the invoice (or upload a scan or PDF). A background worker straightens and cleans the image, reads it with Tesseract (a PDF with a text layer is read directly) and proposes the supplier, invoice number, date, totals and lines, each matched to a catalogue product.
+Purchasing → **Scan invoices**. Photograph the invoice (or upload a scan or PDF). A background worker straightens and cleans the image, reads it with Tesseract (a PDF with a text layer is read directly; with `ANTHROPIC_API_KEY` set, Claude vision reads it instead and Tesseract is the fallback) and proposes the supplier, invoice number, date, totals and lines, each matched to a catalogue product.
 
 - **Nothing reaches stock until a person approves it.** The review screen shows the document beside the fields; unclear fields are highlighted, and a product matched only by a similar name must be confirmed.
 - The lines are checked by arithmetic (quantity × price = total; lines add up to the subtotal), as are the totals, the date and the cost changes. The same supplier invoice number cannot be approved twice, and the same file cannot be uploaded twice.
@@ -170,7 +171,7 @@ Purchasing → **Scan invoices**. Photograph the invoice (or upload a scan or PD
 - It learns: how each supplier writes each product is remembered on approval, so the next invoice matches exactly.
 - The share of lines reviewers had to correct is shown on the page. That is the real-world accuracy measure.
 
-Accuracy on 60 **synthetic** test invoices that were never used for tuning: line items F1 98.1%, date, total and supplier 100%, invoice number 90%, 0.9 s per document. Real invoices will be harder; see [docs/ai/ocr-methodology.md](docs/ai/ocr-methodology.md) for the method, failure analysis and limits, and [sample-data/invoices](sample-data/invoices) for 12 labelled synthetic samples to try.
+Accuracy on 60 **synthetic** test invoices that were never used for tuning: line items F1 98.1%, date, total and supplier 100%, invoice number 90%, 0.9 s per document. These figures are for the Tesseract reader; the optional Claude vision reader has not been measured on this set (that needs the shop's API key: run `scripts/evaluate_ocr.py` with it). Real invoices will be harder; see [docs/ai/ocr-methodology.md](docs/ai/ocr-methodology.md) for the method, failure analysis and limits, and [sample-data/invoices](sample-data/invoices) for 12 labelled synthetic samples to try.
 
 ## Dashboard, reports and backups
 

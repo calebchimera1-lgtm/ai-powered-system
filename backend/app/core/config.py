@@ -99,9 +99,22 @@ class Settings(BaseSettings):
     paperless_token: str = ""
     paperless_public_url: str = ""
 
+    # --- AI assistant and AI invoice reading (Claude API), optional -----------
+    # With an API key from console.anthropic.com the app gets an accounting assistant that
+    # answers questions from the shop's own records and reads receipt/invoice photos.
+    # The key stays on the server; the browser never sees it. Empty = feature off.
+    anthropic_api_key: str = ""
+    assistant_model: str = "claude-opus-5-5"
+    assistant_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    # Read scanned supplier invoices with Claude vision (falls back to Tesseract on errors).
+    ai_invoice_reading: bool = True
+
     # --- Worker ----------------------------------------------------------
     worker_poll_seconds: float = 2.0
     worker_max_attempts: int = 3
+    # If no worker has checked in for a minute, the API reads uploaded invoices itself so
+    # scanning still works (for example when only the API was started from an editor).
+    worker_inline_fallback: bool = True
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -128,6 +141,14 @@ class Settings(BaseSettings):
     @property
     def archive_enabled(self) -> bool:
         return bool(self.paperless_url and self.paperless_token)
+
+    @property
+    def assistant_enabled(self) -> bool:
+        return bool(self.anthropic_api_key)
+
+    @property
+    def ai_invoice_reader_enabled(self) -> bool:
+        return self.assistant_enabled and self.ai_invoice_reading
 
     @property
     def api_docs_enabled(self) -> bool:

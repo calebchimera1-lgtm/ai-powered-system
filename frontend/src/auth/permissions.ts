@@ -36,6 +36,7 @@ export const PERM = {
   ANOMALIES_READ: 'anomalies:read',
   ANOMALIES_REVIEW: 'anomalies:review',
   EXPENSES_WRITE: 'expenses:write',
+  ASSISTANT_USE: 'assistant:use',
 } as const;
 
 export type PermissionCode = (typeof PERM)[keyof typeof PERM] | (string & {});

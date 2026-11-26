@@ -340,6 +340,8 @@ export interface StoreInfo {
   mpesa_stk_enabled?: boolean;
   /** Address of the document archive (Paperless-ngx), when set up. */
   document_archive_url?: string | null;
+  /** True when the server has a Claude API key: the AI assistant and AI invoice reading work. */
+  assistant_enabled?: boolean;
 }
 
 export type MpesaStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'TIMEOUT';

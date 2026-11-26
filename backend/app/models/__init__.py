@@ -7,6 +7,7 @@ from app.models.analytics import (
     Notification,
     ProductForecast,
 )
+from app.models.assistant import AssistantConversation, AssistantMessage, AssistantProposal
 from app.models.auth import (
     PasswordResetToken,
     Permission,
@@ -27,6 +28,9 @@ from app.models.supplier import Supplier, SupplierProduct
 from app.models.system import AuditLog, BackgroundJob
 
 __all__ = [
+    "AssistantConversation",
+    "AssistantMessage",
+    "AssistantProposal",
     "AnomalyAlert",
     "MpesaPayment",
     "Forecast",
