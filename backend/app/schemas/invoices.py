@@ -4,7 +4,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 from app.schemas.common import ORMModel
 from app.schemas.stock import UserBrief
@@ -79,6 +79,22 @@ class InvoiceOut(ORMModel):
     reviewed_at: datetime | None
     review_note: str | None
     purchase_id: int | None
+    # Document archive (Paperless-ngx)
+    archive_status: str | None = None
+    archive_error: str | None = None
+    archive_document_id: int | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def archive_url(self) -> str | None:
+        """Link to the filed copy in the document archive, when there is one."""
+        from app.core.config import get_settings
+
+        base = get_settings().paperless_public_url.rstrip("/")
+        if not base or not self.archive_document_id:
+            return None
+        return f"{base}/documents/{self.archive_document_id}/details"
+
     items: list[InvoiceItemOut] = []
 
 

@@ -239,6 +239,64 @@ and `MPESA_CALLBACK_TOKEN` (a random value of at least 24 characters). Safaricom
 for at least the sale total, and each payment can pay for one sale only. The keys stay on
 the server and are never sent to the browser.
 
+## 6b. Document archive (Paperless-ngx), optional
+
+[Paperless-ngx](https://github.com/paperless-ngx/paperless-ngx) (open source, GPL-3.0) keeps
+every receipt, invoice, contract and tax document scanned, OCR-read, tagged and searchable.
+With it switched on:
+- every supplier invoice approved in Smart Inventory is **filed automatically**, under its
+  supplier, with the type *Supplier invoice*, the tags *supplier invoice* and *smart
+  inventory*, the invoice date, and a title such as *Invoice SI/5040 · GRN-2026-000318*. The
+  invoice page links to the filed copy.
+- staff open **Document archive** in the menu (or `http://<server>:8090`) to upload, search
+  and tag any other document.
+- a scanner set to *scan to folder*, or anyone with access to the server, can drop files into
+  the `archive-inbox` folder. They are read, filed and removed from the folder. Files in a
+  subfolder get that folder's name as a tag (for example `archive-inbox/contracts/`).
+
+It needs about 1–1.5 GB of extra memory.
+
+1. In `.env`, set `PAPERLESS_SECRET_KEY` (a random value of 32+ characters),
+   `PAPERLESS_ADMIN_PASSWORD` (12+ characters) and `PAPERLESS_PUBLIC_URL`, the address staff
+   will use, for example `http://192.168.1.20:8090`. New `.env` files made with `make env`
+   already have random values. Then start the archive (the first start takes a few minutes):
+
+```bash
+make archive
+```
+
+2. Create the token that lets Smart Inventory file invoices, and copy the printed token into
+   `.env` as `PAPERLESS_TOKEN`:
+
+```bash
+make archive-token
+```
+
+3. Restart the app so it picks up the token:
+
+```bash
+docker compose up -d api worker
+```
+
+4. Optional: file the invoices that were approved before the archive existed:
+
+```bash
+make archive-backfill
+```
+
+Sign in to the archive with `PAPERLESS_ADMIN_USER` / `PAPERLESS_ADMIN_PASSWORD`, then create an
+account for each member of staff who needs it (Settings → Users & Groups).
+
+**If an invoice is not filed**, its page says why and an approver can press **Try again**. The
+worker also retries by itself. Each invoice is only ever filed once.
+
+**Backups.** The archive keeps its own data (Docker volumes `archive-data` and
+`archive-media`); Smart Inventory's backups do not include it. Use Paperless's exporter:
+
+```bash
+docker compose --profile archive exec archive document_exporter ../export
+```
+
 ## 7. Troubleshooting
 
 | Symptom | Likely cause and fix |

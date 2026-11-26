@@ -1,9 +1,12 @@
 import clsx from 'clsx';
-import { Boxes, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Archive, Boxes, ExternalLink, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 
+import { salesApi } from '@/api/sales';
 import { useAuth } from '@/auth/AuthProvider';
+import { PERM } from '@/auth/permissions';
 
 import { visibleSections } from './navigation';
 
@@ -19,6 +22,25 @@ function Brand({ onNavigate }: { onNavigate?: () => void }) {
         <p className="text-xs text-gray-500">Supermarket suite</p>
       </div>
     </Link>
+  );
+}
+
+/** Link to the document archive (Paperless-ngx), when the shop has set it up. */
+function ArchiveLink() {
+  const { canAny } = useAuth();
+  const store = useQuery({ queryKey: ['store'], queryFn: salesApi.store, staleTime: 10 * 60_000, retry: false });
+  const url = store.data?.document_archive_url;
+  if (!url || !canAny(PERM.INVOICES_UPLOAD, PERM.INVOICES_APPROVE, PERM.FINANCE_READ)) return null;
+  return (
+    <div>
+      <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-400">Documents</p>
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900">
+        <Archive className="h-5 w-5 shrink-0" aria-hidden />
+        Document archive
+        <ExternalLink className="ml-auto h-3.5 w-3.5 text-gray-400" aria-label="(opens in a new tab)" />
+      </a>
+    </div>
   );
 }
 
@@ -55,6 +77,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
           </ul>
         </div>
       ))}
+      <ArchiveLink />
     </nav>
   );
 }

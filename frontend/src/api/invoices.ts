@@ -73,6 +73,11 @@ export interface Invoice {
   reviewed_at: string | null;
   review_note: string | null;
   purchase_id: number | null;
+  /** Document archive (Paperless-ngx): QUEUED, ARCHIVED or FAILED; null when not used. */
+  archive_status?: 'QUEUED' | 'ARCHIVED' | 'FAILED' | null;
+  archive_error?: string | null;
+  archive_document_id?: number | null;
+  archive_url?: string | null;
   items: InvoiceItem[];
 }
 
@@ -149,4 +154,5 @@ export const invoicesApi = {
     api.post<Invoice>(`/invoices/${id}/approve`, { note: note || null }).then((r) => r.data),
   reject: (id: number, note: string) => api.post<Invoice>(`/invoices/${id}/reject`, { note }).then((r) => r.data),
   reprocess: (id: number) => api.post<Invoice>(`/invoices/${id}/reprocess`).then((r) => r.data),
+  archive: (id: number) => api.post<Invoice>(`/invoices/${id}/archive`).then((r) => r.data),
 };

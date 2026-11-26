@@ -36,7 +36,7 @@ from app.models import (
 from app.schemas.common import PageParams
 from app.schemas.invoices import InvoiceApprove, InvoiceReview
 from app.schemas.procurement import GoodsReceivedCreate, GRNLine
-from app.services import audit_service, job_service, procurement_service
+from app.services import archive_service, audit_service, job_service, procurement_service
 from app.services.audit_service import RequestContext
 
 logger = logging.getLogger(__name__)
@@ -622,6 +622,7 @@ def approve(
             "header_fields_corrected": corrected_fields,
         },
     )
+    archive_service.queue_invoice(db, inv)  # file it in the document archive, if set up
     db.commit()
     db.refresh(inv)
     return inv

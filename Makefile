@@ -2,7 +2,7 @@
 COMPOSE = docker compose
 DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
-.PHONY: help env up down logs ps superadmin demo-users demo test test-backend test-frontend dev backup backups restore
+.PHONY: help env up down logs ps superadmin demo-users demo test test-backend test-frontend dev backup backups restore archive archive-token archive-backfill
 
 help:
 	@echo "make env           Create .env with random secrets (first time only)"
@@ -17,12 +17,17 @@ help:
 	@echo "make backups       List backups"
 	@echo "make restore NAME=<backup>   Restore a backup (stops the app; replaces data)"
 	@echo "make db-least-privilege   Move the app onto its own non-superuser database role"
+	@echo "make archive       Start the document archive (Paperless-ngx) on :8090"
+	@echo "make archive-token Create the API token that files approved invoices there"
+	@echo "make archive-backfill  File invoices approved before the archive existed"
 	@echo "make test          Run backend and frontend tests"
 
 env:
 	@test ! -f .env || (echo ".env already exists; not overwriting" && exit 1)
 	@sed -e "s/CHANGE_ME_db_password/$$(python3 -c 'import secrets;print(secrets.token_urlsafe(24))')/" \
 	     -e "s/CHANGE_ME_app_db_password/$$(python3 -c 'import secrets;print(secrets.token_urlsafe(24))')/" \
+	     -e "s/CHANGE_ME_paperless_secret/$$(python3 -c 'import secrets;print(secrets.token_urlsafe(48))')/" \
+	     -e "s/CHANGE_ME_paperless_admin_password/$$(python3 -c 'import secrets;print(secrets.token_urlsafe(18))')/" \
 	     -e "s/CHANGE_ME_generate_a_long_random_value/$$(python3 -c 'import secrets;print(secrets.token_urlsafe(48))')/" \
 	     .env.example > .env
 	@echo "Created .env with random secrets."
@@ -68,6 +73,22 @@ db-least-privilege:
 	$(COMPOSE) up -d db
 	$(COMPOSE) exec -T db sh /docker-entrypoint-initdb.d/10-app-role.sh
 	$(COMPOSE) up -d --force-recreate api worker
+
+# Document archive (Paperless-ngx). The first start takes a few minutes.
+archive:
+	@grep -Eq '^PAPERLESS_SECRET_KEY=.{32,}' .env && grep -Eq '^PAPERLESS_ADMIN_PASSWORD=.{12,}' .env \
+	  && ! grep -Eq '^PAPERLESS_(SECRET_KEY|ADMIN_PASSWORD)=CHANGE_ME' .env \
+	  || (echo "Set PAPERLESS_SECRET_KEY (32+ chars) and PAPERLESS_ADMIN_PASSWORD (12+ chars) in .env first" && exit 1)
+	mkdir -p archive-inbox
+	ARCHIVE_UID=$$(id -u) ARCHIVE_GID=$$(id -g) $(COMPOSE) --profile archive up -d archive-redis archive
+
+# Prints a token for the archive admin account. Put it in .env as PAPERLESS_TOKEN,
+# then run `docker compose up -d api worker`.
+archive-token:
+	@$(COMPOSE) --profile archive exec -T archive sh -c 'cd /usr/src/paperless/src && python3 manage.py drf_create_token "$$PAPERLESS_ADMIN_USER"'
+
+archive-backfill:
+	$(COMPOSE) exec api python -m scripts.archive_invoices
 
 dev:
 	$(DEV) up --build db api worker

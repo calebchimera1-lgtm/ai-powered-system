@@ -61,6 +61,14 @@ def process_invoice(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     return invoice_service.process(db, int(payload["invoice_id"]))
 
 
+@handler("archive.invoice")
+def archive_invoice(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    """File an approved supplier invoice in the document archive (Paperless-ngx)."""
+    from app.services import archive_service
+
+    return archive_service.archive_invoice(db, int(payload["invoice_id"]))
+
+
 @handler("forecast.run")
 def run_forecast(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     """Backtest, choose models and forecast every product (nightly, or on request)."""

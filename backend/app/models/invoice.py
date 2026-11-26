@@ -58,6 +58,13 @@ class Invoice(IdMixin, TimestampMixin, Base):
     )
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="QUEUED")
 
+    # Filing in the document archive (Paperless-ngx), when it is set up.
+    archive_status: Mapped[str | None] = mapped_column(String(10))  # QUEUED/ARCHIVED/FAILED
+    archive_task_id: Mapped[str | None] = mapped_column(String(64))
+    archive_document_id: Mapped[int | None] = mapped_column(Integer)
+    archive_error: Mapped[str | None] = mapped_column(String(255))
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     # What the OCR did.
     ocr_engine: Mapped[str | None] = mapped_column(String(20))
     ocr_text: Mapped[str | None] = mapped_column(Text)

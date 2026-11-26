@@ -23,3 +23,6 @@ coverage/
 .vscode/
 *.swp
 *.tsbuildinfo
+
+# Document archive scan inbox (private documents)
+archive-inbox/

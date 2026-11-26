@@ -338,6 +338,8 @@ export interface StoreInfo {
   max_cashier_discount_percent: Decimal;
   /** True when the shop has Daraja credentials: the till can send M-Pesa payment prompts. */
   mpesa_stk_enabled?: boolean;
+  /** Address of the document archive (Paperless-ngx), when set up. */
+  document_archive_url?: string | null;
 }
 
 export type MpesaStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'TIMEOUT';

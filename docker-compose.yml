@@ -80,6 +80,55 @@ services:
         condition: service_healthy
     mem_limit: 64m
 
+  # --- Document archive (optional): Paperless-ngx ---------------------------------------
+  # Start with:  docker compose --profile archive up -d   (or: make archive)
+  # Scans, OCRs, tags and indexes receipts, invoices, contracts and tax documents.
+  # Approved supplier invoices are filed here automatically when PAPERLESS_TOKEN is set.
+  archive-redis:
+    image: redis:7-alpine
+    profiles: ["archive"]
+    restart: unless-stopped
+    mem_limit: 128m
+
+  archive:
+    image: paperlessngx/paperless-ngx:3.5.1
+    profiles: ["archive"]
+    restart: unless-stopped
+    depends_on:
+      - archive-redis
+    ports:
+      - "${ARCHIVE_PORT:-8090}:8000"
+    environment:
+      PAPERLESS_REDIS: redis://archive-redis:6379
+      PAPERLESS_BIND_ADDR: 0.0.0.0           # listen on IPv4 (many shop PCs have IPv6 off)
+      # Required for the archive; checked by `make archive` (left optional here so stacks
+      # without the archive still start with older .env files).
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:-}
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER:-archive-admin}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:-}
+      PAPERLESS_URL: ${PAPERLESS_PUBLIC_URL:-http://localhost:8090}
+      # Smart Inventory reaches the archive inside Docker as http://archive:8000; Paperless adds
+      # the public URL's host to this list itself.
+      PAPERLESS_ALLOWED_HOSTS: archive
+      # Run as the owner of ./archive-inbox so filed scans can be removed from it
+      # (`make archive` fills these in from the person running it).
+      USERMAP_UID: ${ARCHIVE_UID:-1000}
+      USERMAP_GID: ${ARCHIVE_GID:-1000}
+      PAPERLESS_TIME_ZONE: Africa/Nairobi
+      PAPERLESS_OCR_LANGUAGE: eng
+      PAPERLESS_DATE_ORDER: DMY               # Kenyan documents put the day first
+      PAPERLESS_FILENAME_FORMAT: "{{ correspondent }}/{{ created_year }}/{{ title }}"
+      PAPERLESS_CONSUMER_RECURSIVE: "true"
+      PAPERLESS_CONSUMER_SUBDIRS_AS_TAGS: "true"
+    volumes:
+      - archive-data:/usr/src/paperless/data
+      - archive-media:/usr/src/paperless/media
+      # A scanner (scan-to-folder) or staff can drop files here; they are read and filed.
+      - ./archive-inbox:/usr/src/paperless/consume
+    mem_limit: 1536m
+
 volumes:
   pgdata:
   storage:
+  archive-data:
+  archive-media:

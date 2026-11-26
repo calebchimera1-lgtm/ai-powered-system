@@ -91,6 +91,14 @@ class Settings(BaseSettings):
     mpesa_callback_base_url: str = ""
     mpesa_callback_token: str = ""
 
+    # --- Document archive (Paperless-ngx), optional --------------------------
+    # Approved supplier invoices are filed in Paperless-ngx automatically: OCR'd, tagged by
+    # supplier, searchable. paperless_url is how the server reaches it (inside Docker:
+    # http://archive:8000); paperless_public_url is the address staff open in the browser.
+    paperless_url: str = ""
+    paperless_token: str = ""
+    paperless_public_url: str = ""
+
     # --- Worker ----------------------------------------------------------
     worker_poll_seconds: float = 2.0
     worker_max_attempts: int = 3
@@ -116,6 +124,10 @@ class Settings(BaseSettings):
                 self.mpesa_passkey,
             )
         )
+
+    @property
+    def archive_enabled(self) -> bool:
+        return bool(self.paperless_url and self.paperless_token)
 
     @property
     def api_docs_enabled(self) -> bool:

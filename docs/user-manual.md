@@ -241,6 +241,14 @@ You can do everything above, plus:
 - **Reset two-step sign-in** if someone lost the phone with their authenticator app; they are
   signed out everywhere and can set it up again.
 
+### Document archive: Documents → Document archive
+
+When the shop has the document archive (Paperless-ngx), approved supplier invoices are filed
+there automatically. The invoice page shows **Filed in the document archive**; click it to
+open the filed copy. Other papers (contracts, tax documents, utility bills, receipts) can be
+uploaded in the archive itself or scanned into the shared `archive-inbox` folder. The archive
+reads the text, so a search for any word on the page finds the document.
+
 ### Audit log: Administration → Audit log
 
 This records who did what and when: sign-ins, user changes, prices, adjustments, approvals,

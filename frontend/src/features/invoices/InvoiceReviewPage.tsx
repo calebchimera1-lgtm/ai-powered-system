@@ -21,6 +21,7 @@ import { useSupplierOptions } from '@/features/products/hooks';
 import { errorMessage } from '@/lib/errors';
 import { formatDateTime, formatKES } from '@/lib/format';
 
+import { ArchiveStatus } from './ArchiveStatus';
 import {
   LOW_CONFIDENCE, MATCH_LABEL, STATUS_LABEL, STATUS_TONE, approvalProblems, blankLine, costExclVat,
   draftFrom, isWorking, lineAmount, toReviewInput, totalsCheck, type Draft, type DraftLine,
@@ -250,6 +251,7 @@ function Review({ inv }: { inv: Invoice }) {
           <Badge tone={STATUS_TONE[inv.status]}>{STATUS_LABEL[inv.status]}</Badge>
           {inv.reviewed_by && <span className="text-sm text-gray-600">by {inv.reviewed_by.full_name}, {formatDateTime(inv.reviewed_at)}</span>}
           {inv.purchase_id && <Link className="text-sm font-medium text-brand-700 hover:underline" to={`/purchasing/receipts/${inv.purchase_id}`}>View goods-received note</Link>}
+          <ArchiveStatus inv={inv} canRetry={canApprove} />
         </div>
         {inv.review_note && <Alert tone="info">Note: {inv.review_note}</Alert>}
         {inv.status === 'FAILED' && <Alert tone="error">The document could not be read{inv.error_message ? `: ${inv.error_message}` : '.'} You can type the details in by hand below, or reject it.</Alert>}

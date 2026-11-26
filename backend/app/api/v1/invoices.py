@@ -22,7 +22,7 @@ from app.schemas.invoices import (
     InvoiceStats,
     InvoiceSummary,
 )
-from app.services import invoice_service
+from app.services import archive_service, invoice_service
 
 router = APIRouter(prefix="/invoices", tags=["Invoice digitization"])
 
@@ -121,6 +121,13 @@ def approve(
     """Receive the reviewed invoice into stock (creates a goods-received note)."""
     inv = invoice_service.get(db, invoice_id)
     return InvoiceOut.model_validate(invoice_service.approve(db, inv, body, user, ctx))
+
+
+@router.post("/{invoice_id}/archive", response_model=InvoiceOut)
+def archive(invoice_id: int, _: Approver, db: DbSession) -> InvoiceOut:
+    """File (or re-try filing) an approved invoice in the document archive."""
+    inv = invoice_service.get(db, invoice_id)
+    return InvoiceOut.model_validate(archive_service.retry(db, inv))
 
 
 @router.post("/{invoice_id}/reject", response_model=InvoiceOut)

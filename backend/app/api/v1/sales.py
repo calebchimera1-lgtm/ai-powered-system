@@ -92,6 +92,7 @@ def store_info(_: CurrentUser) -> StoreInfo:
         currency=s.currency,
         max_cashier_discount_percent=s.max_cashier_discount_percent,
         mpesa_stk_enabled=s.mpesa_enabled,
+        document_archive_url=(s.paperless_public_url or None) if s.archive_enabled else None,
     )
 
 
