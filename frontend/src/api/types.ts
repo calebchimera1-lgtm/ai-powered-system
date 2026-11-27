@@ -342,6 +342,8 @@ export interface StoreInfo {
   document_archive_url?: string | null;
   /** True when the server has a Claude API key: the AI assistant and AI invoice reading work. */
   assistant_enabled?: boolean;
+  /** Customer returns/refund policy printed on receipts. */
+  return_policy?: string;
 }
 
 export type MpesaStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'TIMEOUT';
@@ -498,4 +500,17 @@ export interface AnalyticsOverview {
   by_category: { category: string; quantity: Decimal; revenue: Decimal; cost_of_goods_sold: Decimal; gross_profit: Decimal; margin_percent: Decimal | null }[];
   top_products: { product_id: number; name: string; sku: string; category: string | null; quantity: Decimal; revenue: Decimal; cost_of_goods_sold: Decimal; gross_profit: Decimal; margin_percent: Decimal | null }[];
   payment_methods: { payment_method: PaymentMethod; transactions: number; total: Decimal }[];
+}
+
+/** Public facts for the privacy notice and terms of use (no sign-in needed). */
+export interface LegalInfo {
+  store_name: string;
+  store_address: string;
+  store_phone: string;
+  store_kra_pin: string;
+  privacy_contact: string;
+  return_policy: string;
+  ai_assistant: boolean;
+  mpesa_prompts: boolean;
+  document_archive: boolean;
 }

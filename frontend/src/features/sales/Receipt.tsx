@@ -42,9 +42,10 @@ export function Receipt({ sale, store }: { sale: Sale; store?: StoreInfo }) {
       <Line label="VAT included" value={sale.tax_total} />
       <div className="my-2 border-t border-dashed border-gray-300" />
       <Line label={`Paid (${METHOD[sale.payment_method]})`} value={sale.amount_tendered ?? sale.grand_total} />
-      {sale.change_given !== null && <Line label="Change" value={sale.change_given} />}
+      {sale.change_given !== null && <Line label={changeLabel(sale)} value={sale.change_given} />}
       {sale.payment_reference && <p>Ref: {sale.payment_reference}</p>}
       <div className="my-2 border-t border-dashed border-gray-300" />
+      {store?.return_policy && <p className="mt-1 text-center text-[11px]">Returns: {store.return_policy}</p>}
       <p className="text-center">{store?.receipt_footer}</p>
     </div>
   );
@@ -106,10 +107,16 @@ export function printReceipt(sale: Sale, store?: StoreInfo): void {
   row('VAT included', formatKES(sale.tax_total));
   rule();
   row(`Paid (${METHOD[sale.payment_method]})`, formatKES(sale.amount_tendered ?? sale.grand_total));
-  if (sale.change_given !== null) row('Change', formatKES(sale.change_given));
+  if (sale.change_given !== null) row(changeLabel(sale), formatKES(sale.change_given));
   if (sale.payment_reference) add(`Ref: ${sale.payment_reference}`);
   rule();
+  if (store?.return_policy) add(`Returns: ${store.return_policy}`, center);
   if (store?.receipt_footer) add(store.receipt_footer, center);
   w.focus();
   w.print();
+}
+
+/** M-Pesa prompts are for whole shillings; the rounded-up cents are owed back to the customer. */
+function changeLabel(sale: { payment_method: string }): string {
+  return sale.payment_method === 'MPESA' ? 'Change due (M-Pesa rounding)' : 'Change';
 }

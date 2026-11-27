@@ -72,6 +72,11 @@ class Settings(BaseSettings):
     store_phone: str = ""
     store_kra_pin: str = ""
     receipt_footer: str = "Thank you for shopping with us!"
+    # Customer returns/refund policy, printed on every receipt (empty = not printed).
+    return_policy: str = ""
+    # Who answers questions and requests about personal data (shown in the privacy notice).
+    # Defaults to the store's phone number.
+    privacy_contact: str = ""
 
     # --- M-Pesa STK push (Safaricom Daraja "Lipa Na M-Pesa Online") ---------
     # The till can send a payment prompt to the customer's phone. Off unless the four

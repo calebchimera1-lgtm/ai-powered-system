@@ -99,6 +99,14 @@ def reset_mfa(user_id: int, actor: Manager, db: DbSession, ctx: Ctx) -> UserOut:
     return _out(user_service.reset_mfa(db, user, actor, ctx))
 
 
+@router.post("/{user_id}/erase", response_model=UserOut)
+def erase_personal_data(user_id: int, actor: Manager, db: DbSession, ctx: Ctx) -> UserOut:
+    """Erase a former staff member's personal data (account must be deactivated first).
+    Their sales and records stay, linked to "Former staff member #<id>"."""
+    user = user_service.get_user(db, user_id)
+    return _out(user_service.erase_personal_data(db, user, actor, ctx))
+
+
 @router.post("/{user_id}/revoke-sessions", response_model=Message)
 def revoke_sessions(user_id: int, actor: Manager, db: DbSession, ctx: Ctx) -> Message:
     """Sign the user out of every device."""

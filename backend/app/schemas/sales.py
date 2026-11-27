@@ -137,6 +137,7 @@ class StoreInfo(BaseModel):
     # Address of the document archive for the menu link, when set up.
     document_archive_url: str | None = None
     assistant_enabled: bool = False
+    return_policy: str = ""
 
 
 # --- Returns ----------------------------------------------------------------------
@@ -183,3 +184,17 @@ class ReturnOut(BaseModel):
     decision_note: str | None
     created_at: datetime
     items: list[ReturnItemOut]
+
+
+class LegalInfo(BaseModel):
+    """Public facts the privacy notice and terms of use need (no sign-in required)."""
+
+    store_name: str
+    store_address: str
+    store_phone: str
+    store_kra_pin: str
+    privacy_contact: str
+    return_policy: str
+    ai_assistant: bool
+    mpesa_prompts: bool
+    document_archive: bool

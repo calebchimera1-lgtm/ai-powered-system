@@ -1,5 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, LogOut, Pencil, Search, ShieldOff, Unlock, UserCheck, UserPlus, UserX } from 'lucide-react';
+import { Eraser, KeyRound, LogOut, Pencil, Search, ShieldOff, Unlock, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { useState } from 'react';
 
 import type { UserOut } from '@/api/types';
@@ -25,7 +25,7 @@ import { UserFormModal, type CreateValues, type EditValues } from './UserFormMod
 const PAGE_SIZE = 20;
 
 type Confirm =
-  | { kind: 'deactivate' | 'activate' | 'signout' | 'mfa'; user: UserOut }
+  | { kind: 'deactivate' | 'activate' | 'signout' | 'mfa' | 'erase'; user: UserOut }
   | null;
 
 export function UsersPage() {
@@ -64,6 +64,10 @@ export function UsersPage() {
   const actionMutation = useMutation({
     mutationFn: async (c: NonNullable<Confirm>) => {
       if (c.kind === 'signout') return (await usersApi.revokeSessions(c.user.id)).message;
+      if (c.kind === 'erase') {
+        await usersApi.erase(c.user.id);
+        return `Personal data of ${c.user.full_name} was erased`;
+      }
       if (c.kind === 'mfa') {
         await usersApi.resetMfa(c.user.id);
         return `Two-step sign-in turned off for ${c.user.full_name}`;
@@ -194,7 +198,8 @@ export function UsersPage() {
               { label: 'Unlock account', icon: <Unlock className="h-4 w-4" />, onClick: () => unlock(u), hidden: !u.is_locked },
               { label: 'Reset two-step sign-in', icon: <ShieldOff className="h-4 w-4" />, onClick: () => setConfirm({ kind: 'mfa', user: u }), hidden: !u.mfa_enabled || u.id === me?.id },
               { label: 'Sign out everywhere', icon: <LogOut className="h-4 w-4" />, onClick: () => setConfirm({ kind: 'signout', user: u }), hidden: u.id === me?.id },
-              { label: 'Reactivate', icon: <UserCheck className="h-4 w-4" />, onClick: () => setConfirm({ kind: 'activate', user: u }), hidden: u.is_active },
+              { label: 'Reactivate', icon: <UserCheck className="h-4 w-4" />, onClick: () => setConfirm({ kind: 'activate', user: u }), hidden: u.is_active || u.username.startsWith('erased-') },
+              { label: 'Erase personal data', icon: <Eraser className="h-4 w-4" />, danger: true, onClick: () => setConfirm({ kind: 'erase', user: u }), hidden: u.is_active || u.username.startsWith('erased-') },
               { label: 'Deactivate', icon: <UserX className="h-4 w-4" />, danger: true, onClick: () => setConfirm({ kind: 'deactivate', user: u }), hidden: !u.is_active || u.id === me?.id },
             ]}
           />
@@ -204,6 +209,12 @@ export function UsersPage() {
 
   const data = usersQuery.data;
   const confirmText = confirm && {
+    erase: {
+      title: 'Erase this person’s personal data?',
+      body: `${confirm.user.full_name}’s name, username, e-mail, phone, password and sign-in history will be permanently erased (Data Protection Act right to erasure). Sales and records they made are kept for tax law and will show “Former staff member #${confirm.user.id}”. This cannot be undone.`,
+      label: 'Erase personal data',
+      tone: 'danger' as const,
+    },
     deactivate: {
       title: 'Deactivate this account?',
       body: `${confirm.user.full_name} will be signed out immediately and will not be able to sign in. Their history is kept. You can reactivate the account later.`,

@@ -117,6 +117,10 @@ def checkout(
         # Locks the payment row: one M-Pesa payment can never pay for two sales.
         mpesa = mpesa_service.claim_for_sale(db, data.mpesa_payment_id, cashier, cart.grand_total)
         reference = mpesa_service.sale_reference(mpesa)
+        # M-Pesa takes whole shillings, so the cents were rounded up. Record what the customer
+        # really paid and the difference, so the receipt shows it and it can be given back.
+        tendered = Decimal(mpesa.amount).quantize(CENT)
+        change = (tendered - cart.grand_total).quantize(CENT)
 
     customer = _customer(db, data.customer_name, data.customer_phone)
 

@@ -364,3 +364,23 @@ def test_manual_transaction_code_still_works(client: TestClient, shop, mpesa) ->
         },
     )
     assert r.status_code == 201 and r.json()["payment_reference"] == "SKD4H2L9QX"
+
+
+def test_rounded_up_cents_are_shown_as_change_due(client: TestClient, shop, mpesa, db) -> None:
+    """M-Pesa takes whole shillings: KES 244.50 is requested as 245, and the receipt must
+    show what was paid and the 0.50 owed back, never keep it silently."""
+    from decimal import Decimal
+
+    from app.models import Product
+
+    p = db.get(Product, shop["sugar"]["id"])
+    p.selling_price = Decimal("244.50")
+    db.commit()
+    h = shop["cashier"]
+    pid = client.post(PUSH, headers=h, json={"phone": "0712345678", "amount": "244.50"}).json()
+    assert pid["amount"] == 245
+    mpesa.results[next(iter(mpesa.results))] = ("0", "ok")
+    client.get(f"/api/v1/payments/mpesa/{pid['id']}", headers=h)
+    sale = pay_sale(client, h, shop["sugar"], pid["id"]).json()
+    assert sale["grand_total"] == "244.50"
+    assert sale["amount_tendered"] == "245.00" and sale["change_given"] == "0.50"

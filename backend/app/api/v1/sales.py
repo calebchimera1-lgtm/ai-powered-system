@@ -13,6 +13,7 @@ from app.models import Sale, SaleReturn, User
 from app.schemas.common import Page
 from app.schemas.sales import (
     CheckoutRequest,
+    LegalInfo,
     ReturnCreate,
     ReturnDecision,
     ReturnItemOut,
@@ -94,6 +95,25 @@ def store_info(_: CurrentUser) -> StoreInfo:
         mpesa_stk_enabled=s.mpesa_enabled,
         document_archive_url=(s.paperless_public_url or None) if s.archive_enabled else None,
         assistant_enabled=s.assistant_enabled,
+        return_policy=s.return_policy,
+    )
+
+
+@router.get("/legal", response_model=LegalInfo, tags=["Settings"])
+def legal_info() -> LegalInfo:
+    """Public: who runs this system and which outside services it uses, for the privacy
+    notice and terms of use pages shown before sign-in."""
+    s = get_settings()
+    return LegalInfo(
+        store_name=s.store_name,
+        store_address=s.store_address,
+        store_phone=s.store_phone,
+        store_kra_pin=s.store_kra_pin,
+        privacy_contact=s.privacy_contact or s.store_phone,
+        return_policy=s.return_policy,
+        ai_assistant=s.assistant_enabled,
+        mpesa_prompts=s.mpesa_enabled,
+        document_archive=s.archive_enabled,
     )
 
 

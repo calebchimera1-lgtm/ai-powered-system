@@ -1,15 +1,16 @@
 """User administration: list, create, update, unlock and force sign-out."""
 
+import secrets
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ConflictError, NotFoundError, ValidationFailed
 from app.core.permissions import RoleName
 from app.core.security import generate_token, hash_password
-from app.models import Role, User
+from app.models import AuditLog, Role, User
 from app.schemas.common import PageParams
 from app.schemas.users import UserCreate, UserUpdate
 from app.services import audit_service, auth_service
@@ -255,3 +256,64 @@ def force_sign_out(db: Session, user: User, actor: User, ctx: RequestContext) ->
     )
     db.commit()
     return count
+
+
+def erase_personal_data(db: Session, user: User, actor: User, ctx: RequestContext) -> User:
+    """Right to erasure (Kenya Data Protection Act 2019, s.40) for a former staff member.
+
+    The account must already be deactivated. Name, username, e-mail, phone, password and
+    two-step secret are replaced, and their sign-in sessions (with IP addresses and device
+    names) are deleted. Sales, stock movements and audit entries they made are kept, as tax
+    and accounting law requires, but now point to "Former staff member #<id>".
+    """
+    from app.models import PasswordResetToken, UserSession
+
+    if user.id == actor.id:
+        raise ValidationFailed("You cannot erase your own account.")
+    if user.is_active:
+        raise ValidationFailed("Deactivate the account first, then erase the personal data.")
+    if user.username == f"erased-{user.id}":
+        raise ValidationFailed("This person's personal data has already been erased.")
+    user.full_name = f"Former staff member #{user.id}"
+    user.username = f"erased-{user.id}"
+    user.email = f"erased-{user.id}@example.com"  # reserved domain: never delivers
+    user.phone = None
+    user.password_hash = hash_password(secrets.token_urlsafe(48))
+    user.totp_secret = user.totp_enabled_at = user.totp_last_step = None
+    user.locked_until = None
+    db.execute(delete(UserSession).where(UserSession.user_id == user.id))
+    db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user.id))
+    # Earlier audit entries about this account held their name and contact details, and
+    # entries they made held their IP address and device: keep the entries, drop those.
+    personal = ("full_name", "username", "email", "phone")
+    for entry in db.scalars(
+        select(AuditLog).where(
+            or_(
+                (AuditLog.entity_type == "user") & (AuditLog.entity_id == str(user.id)),
+                AuditLog.user_id == user.id,
+            )
+        )
+    ):
+        if entry.entity_type == "user" and entry.entity_id == str(user.id):
+            for field in ("before", "after"):
+                data = getattr(entry, field)
+                if data and any(k in data for k in personal):
+                    setattr(
+                        entry,
+                        field,
+                        {k: ("[erased]" if k in personal else v) for k, v in data.items()},
+                    )
+        if entry.user_id == user.id:
+            entry.ip_address = entry.user_agent = None
+    audit_service.record(
+        db,
+        action="user.personal_data_erased",
+        actor=actor,
+        ctx=ctx,
+        entity_type="user",
+        entity_id=user.id,
+        details="Name, username, e-mail, phone, password and sessions erased on request",
+    )
+    db.commit()
+    db.refresh(user)
+    return user

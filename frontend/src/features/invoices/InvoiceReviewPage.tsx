@@ -106,7 +106,8 @@ function DocumentImage({ inv }: { inv: Invoice }) {
       </div>
       {inv.processing_steps && (
         <p className="border-t border-gray-100 px-4 py-2 text-xs text-gray-500">
-          Read with {inv.ocr_engine === 'pdf-text' ? 'the PDF text (no OCR needed)' : 'OCR'}
+          {inv.ocr_engine === 'claude-vision' && <span className="mr-1 inline-flex items-center rounded bg-brand-50 px-1.5 py-0.5 font-medium text-brand-800">AI-generated: check every field against the paper</span>}
+          Read with {inv.ocr_engine === 'pdf-text' ? 'the PDF text (no OCR needed)' : inv.ocr_engine === 'claude-vision' ? 'AI (Claude vision)' : 'OCR'}
           {inv.processing_ms !== null && ` in ${(inv.processing_ms / 1000).toFixed(1)} s`}
           {inv.processing_steps.length > 0 && ` · ${inv.processing_steps.join('; ')}`}
         </p>

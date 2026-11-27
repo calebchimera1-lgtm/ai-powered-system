@@ -50,6 +50,8 @@ const BackupsPage = page(() => import('@/features/admin/BackupsPage'), 'BackupsP
 const ReportsPage = page(() => import('@/features/reports/ReportsPage'), 'ReportsPage');
 const NotificationsPage = page(() => import('@/features/notifications/NotificationsPage'), 'NotificationsPage');
 const InvoiceReviewPage = page(() => import('@/features/invoices/InvoiceReviewPage'), 'InvoiceReviewPage');
+const PrivacyPage = page(() => import('@/features/legal/LegalPages'), 'PrivacyPage');
+const TermsPage = page(() => import('@/features/legal/LegalPages'), 'TermsPage');
 const AssistantPage = page(() => import('@/features/assistant/AssistantPage'), 'AssistantPage');
 const InvoicesPage = page(() => import('@/features/invoices/InvoicesPage'), 'InvoicesPage');
 const GoodsReceivedDetailPage = page(() => import('@/features/purchasing/GoodsReceivedDetailPage'), 'GoodsReceivedDetailPage');
@@ -77,6 +79,8 @@ export function AppRoutes() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route element={<RequireAuth />}>
         <Route path="/change-password" element={<ChangePasswordPage />} />
         <Route element={<AppShell />}>

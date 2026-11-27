@@ -98,7 +98,7 @@ export function MpesaPrompt({
         {payment ? 'Send the prompt again' : 'Send payment prompt'} · KES {amount.toLocaleString('en-KE')}
       </Button>
       {amount !== Math.round(total * 100) / 100 && total > 0 && (
-        <p className="text-xs text-gray-500">M-Pesa takes whole shillings, so KES {amount.toLocaleString('en-KE')} will be requested.</p>
+        <p className="text-xs text-gray-500">M-Pesa takes whole shillings, so KES {amount.toLocaleString('en-KE')} will be requested. Tell the customer; the difference is printed on the receipt as change due.</p>
       )}
       <button type="button" onClick={onEnterCodeInstead} className="py-1 text-xs font-medium text-brand-700 hover:underline">
         Customer already paid? Enter the M-Pesa code instead
